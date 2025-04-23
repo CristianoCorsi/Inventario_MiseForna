@@ -369,6 +369,88 @@ export class MemStorage implements IStorage {
       return newSetting;
     }
   }
+  
+  // QR Code methods
+  async getQrCodes(): Promise<QrCode[]> {
+    return Array.from(this.qrCodes.values());
+  }
+  
+  async getQrCode(id: number): Promise<QrCode | undefined> {
+    return this.qrCodes.get(id);
+  }
+  
+  async getQrCodeByCodeId(qrCodeId: string): Promise<QrCode | undefined> {
+    return Array.from(this.qrCodes.values()).find(qrCode => qrCode.qrCodeId === qrCodeId);
+  }
+  
+  async createQrCode(qrCode: InsertQrCode): Promise<QrCode> {
+    const id = this.qrCodeCurrentId++;
+    const newQrCode: QrCode = { 
+      ...qrCode, 
+      id, 
+      dateGenerated: qrCode.dateGenerated || new Date(),
+      isAssigned: qrCode.isAssigned || false
+    };
+    this.qrCodes.set(id, newQrCode);
+    
+    // Log activity for QR code generation
+    await this.createActivity({
+      activityType: "qrGenerated",
+      description: `Generated QR code "${qrCode.qrCodeId}"`,
+      metadata: { qrCodeId: qrCode.qrCodeId }
+    });
+    
+    return newQrCode;
+  }
+  
+  async updateQrCode(id: number, qrCode: Partial<InsertQrCode>): Promise<QrCode | undefined> {
+    const existingQrCode = this.qrCodes.get(id);
+    if (!existingQrCode) return undefined;
+    
+    const updatedQrCode = { ...existingQrCode, ...qrCode };
+    this.qrCodes.set(id, updatedQrCode);
+    return updatedQrCode;
+  }
+  
+  async deleteQrCode(id: number): Promise<boolean> {
+    return this.qrCodes.delete(id);
+  }
+  
+  async getUnassignedQrCodes(): Promise<QrCode[]> {
+    return Array.from(this.qrCodes.values()).filter(qrCode => !qrCode.isAssigned);
+  }
+  
+  async associateQrCodeWithItem(qrCodeId: string, itemId: number): Promise<QrCode | undefined> {
+    // Find the QR code
+    const qrCode = await this.getQrCodeByCodeId(qrCodeId);
+    if (!qrCode) return undefined;
+    
+    // Check if the item exists
+    const item = await this.getItem(itemId);
+    if (!item) return undefined;
+    
+    // Update the QR code
+    const updatedQrCode = await this.updateQrCode(qrCode.id, {
+      isAssigned: true,
+      assignedToItemId: itemId,
+      dateAssigned: new Date()
+    });
+    
+    // Update the item
+    await this.updateItem(itemId, {
+      qrCode: qrCodeId
+    });
+    
+    // Log activity
+    await this.createActivity({
+      itemId,
+      activityType: "qrAssociated",
+      description: `Associated QR code "${qrCodeId}" with item "${item.name}"`,
+      metadata: { qrCodeId, itemId: item.itemId }
+    });
+    
+    return updatedQrCode;
+  }
 }
 
 export const storage = new MemStorage();

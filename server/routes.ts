@@ -6,8 +6,10 @@ import {
   insertLocationSchema, 
   insertLoanSchema, 
   insertActivitySchema,
+  insertQrCodeSchema,
   itemFormSchema,
-  loanFormSchema
+  loanFormSchema,
+  qrCodeFormSchema
 } from "@shared/schema";
 import { z } from "zod";
 import path from "path";
@@ -369,6 +371,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const setting = await storage.updateSetting(key, value);
     res.json(setting);
+  });
+  
+  // QR Code routes
+  app.get('/api/qrcodes', async (req, res) => {
+    const qrCodes = await storage.getQrCodes();
+    res.json(qrCodes);
+  });
+  
+  app.get('/api/qrcodes/unassigned', async (req, res) => {
+    const qrCodes = await storage.getUnassignedQrCodes();
+    res.json(qrCodes);
+  });
+  
+  app.get('/api/qrcodes/code/:qrCodeId', async (req, res) => {
+    const qrCodeId = req.params.qrCodeId;
+    const qrCode = await storage.getQrCodeByCodeId(qrCodeId);
+    
+    if (!qrCode) {
+      return res.status(404).json({ message: "QR code not found" });
+    }
+    
+    res.json(qrCode);
+  });
+  
+  app.get('/api/qrcodes/:id', async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+    
+    const qrCode = await storage.getQrCode(id);
+    if (!qrCode) {
+      return res.status(404).json({ message: "QR code not found" });
+    }
+    
+    res.json(qrCode);
+  });
+  
+  app.post('/api/qrcodes', async (req, res) => {
+    try {
+      const validatedData = qrCodeFormSchema.parse(req.body);
+      
+      // Generate QR code image
+      const qrDataUrl = await QRCode.toDataURL(validatedData.qrCodeId);
+      
+      const newQrCode = await storage.createQrCode({
+        ...validatedData,
+        isAssigned: false
+      });
+      
+      res.status(201).json(newQrCode);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create QR code" });
+    }
+  });
+  
+  app.post('/api/qrcodes/batch', async (req, res) => {
+    try {
+      const { prefix, quantity, description } = req.body;
+      
+      if (!prefix || typeof prefix !== 'string') {
+        return res.status(400).json({ message: "Prefix is required" });
+      }
+      
+      if (!quantity || typeof quantity !== 'number' || quantity <= 0 || quantity > 100) {
+        return res.status(400).json({ message: "Quantity must be between 1 and 100" });
+      }
+      
+      const results = [];
+      const now = new Date();
+      
+      for (let i = 0; i < quantity; i++) {
+        // Generate unique ID with prefix and sequential number
+        const paddedNumber = (i + 1).toString().padStart(4, '0');
+        const qrCodeId = `${prefix}-${paddedNumber}`;
+        
+        const newQrCode = await storage.createQrCode({
+          qrCodeId,
+          description: description || `Pre-generated QR code ${qrCodeId}`,
+          dateGenerated: now,
+          isAssigned: false
+        });
+        
+        results.push(newQrCode);
+      }
+      
+      res.status(201).json(results);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create batch QR codes" });
+    }
+  });
+  
+  app.post('/api/qrcodes/associate', async (req, res) => {
+    try {
+      const { qrCodeId, itemId } = req.body;
+      
+      if (!qrCodeId || typeof qrCodeId !== 'string') {
+        return res.status(400).json({ message: "QR code ID is required" });
+      }
+      
+      if (!itemId || typeof itemId !== 'number') {
+        return res.status(400).json({ message: "Item ID is required" });
+      }
+      
+      // Check if QR code exists
+      const qrCode = await storage.getQrCodeByCodeId(qrCodeId);
+      if (!qrCode) {
+        return res.status(404).json({ message: "QR code not found" });
+      }
+      
+      // Check if already assigned
+      if (qrCode.isAssigned) {
+        return res.status(400).json({ message: "QR code is already assigned" });
+      }
+      
+      // Check if item exists
+      const item = await storage.getItem(itemId);
+      if (!item) {
+        return res.status(404).json({ message: "Item not found" });
+      }
+      
+      const updatedQrCode = await storage.associateQrCodeWithItem(qrCodeId, itemId);
+      
+      res.json(updatedQrCode);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to associate QR code with item" });
+    }
   });
   
   // Batch processing

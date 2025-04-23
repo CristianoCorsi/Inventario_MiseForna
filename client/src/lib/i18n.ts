@@ -1,5 +1,6 @@
 // Internationalization utility for the application
 // This provides a simple translation service for the app
+import React from 'react';
 
 // Italian translations (default)
 const it = {
@@ -282,13 +283,13 @@ const en = {
 };
 
 // Create a map of languages
-const translations = {
+const translations: Record<string, Record<string, string>> = {
   it,
   en,
 };
 
 // Default language is Italian
-let currentLanguage = 'it';
+let currentLanguage: 'it' | 'en' = 'it';
 
 /**
  * Get a translation for a key in the current language

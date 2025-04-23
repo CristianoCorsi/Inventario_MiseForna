@@ -1,12 +1,13 @@
 import { useState, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useReactToPrint } from "react-to-print";
 import { 
   Card, 
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle 
+  CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import { 
   Select, 
@@ -23,8 +24,47 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QRCodeGenerator } from "@/components/inventory/QRCodeGenerator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Item } from "@shared/schema";
-import { PrinterIcon, SearchIcon, ScanIcon } from "lucide-react";
+import { Item, QrCode } from "@shared/schema";
+import { 
+  AlertCircle, 
+  ArrowRightIcon, 
+  ListFilterIcon, 
+  MoreHorizontalIcon,
+  PlusIcon, 
+  PrinterIcon, 
+  QrCodeIcon, 
+  SearchIcon, 
+  ScanIcon, 
+  TagIcon,
+  Table2Icon
+} from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { t } from "@/lib/i18n";
 
 export default function QRCodes() {
   const { toast } = useToast();
