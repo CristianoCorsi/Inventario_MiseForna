@@ -4,7 +4,8 @@ import {
   Loan, InsertLoan, 
   Activity, InsertActivity, 
   Setting, InsertSetting,
-  items, locations, loans, activities, settings
+  QrCode, InsertQrCode,
+  items, locations, loans, activities, settings, qrCodes
 } from "@shared/schema";
 
 export interface IStorage {
@@ -34,6 +35,16 @@ export interface IStorage {
   returnLoan(id: number, returnDate?: Date): Promise<Loan | undefined>;
   deleteLoan(id: number): Promise<boolean>;
   
+  // QR Codes
+  getQrCodes(): Promise<QrCode[]>;
+  getQrCode(id: number): Promise<QrCode | undefined>;
+  getQrCodeByCodeId(qrCodeId: string): Promise<QrCode | undefined>;
+  createQrCode(qrCode: InsertQrCode): Promise<QrCode>;
+  updateQrCode(id: number, qrCode: Partial<InsertQrCode>): Promise<QrCode | undefined>;
+  deleteQrCode(id: number): Promise<boolean>;
+  getUnassignedQrCodes(): Promise<QrCode[]>;
+  associateQrCodeWithItem(qrCodeId: string, itemId: number): Promise<QrCode | undefined>;
+  
   // Activities
   getActivities(limit?: number): Promise<Activity[]>;
   getActivitiesByItemId(itemId: number): Promise<Activity[]>;
@@ -50,12 +61,14 @@ export class MemStorage implements IStorage {
   private loans: Map<number, Loan>;
   private activities: Map<number, Activity>;
   private settings: Map<string, Setting>;
+  private qrCodes: Map<number, QrCode>;
   
   private itemCurrentId: number;
   private locationCurrentId: number;
   private loanCurrentId: number;
   private activityCurrentId: number;
   private settingCurrentId: number;
+  private qrCodeCurrentId: number;
   
   constructor() {
     this.items = new Map();
@@ -63,12 +76,14 @@ export class MemStorage implements IStorage {
     this.loans = new Map();
     this.activities = new Map();
     this.settings = new Map();
+    this.qrCodes = new Map();
     
     this.itemCurrentId = 1;
     this.locationCurrentId = 1;
     this.loanCurrentId = 1;
     this.activityCurrentId = 1;
     this.settingCurrentId = 1;
+    this.qrCodeCurrentId = 1;
     
     // Initialize with default locations
     this.createLocation({ name: "Storage A", description: "Main storage area" });

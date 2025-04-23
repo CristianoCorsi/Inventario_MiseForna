@@ -56,12 +56,24 @@ export const settings = pgTable("settings", {
   value: text("value"),
 });
 
+// Unassigned QR codes table
+export const qrCodes = pgTable("qr_codes", {
+  id: serial("id").primaryKey(),
+  qrCodeId: text("qr_code_id").notNull().unique(), // The generated unique ID
+  description: text("description"),
+  dateGenerated: timestamp("date_generated").defaultNow(),
+  isAssigned: boolean("is_assigned").default(false),
+  assignedToItemId: integer("assigned_to_item_id"), // References items.id when assigned
+  dateAssigned: timestamp("date_assigned"),
+});
+
 // Insert schemas
 export const insertItemSchema = createInsertSchema(items).omit({ id: true });
 export const insertLocationSchema = createInsertSchema(locations).omit({ id: true });
 export const insertLoanSchema = createInsertSchema(loans).omit({ id: true });
 export const insertActivitySchema = createInsertSchema(activities).omit({ id: true });
 export const insertSettingSchema = createInsertSchema(settings).omit({ id: true });
+export const insertQrCodeSchema = createInsertSchema(qrCodes).omit({ id: true });
 
 // Select types
 export type Item = typeof items.$inferSelect;
@@ -69,6 +81,7 @@ export type Location = typeof locations.$inferSelect;
 export type Loan = typeof loans.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
 export type Setting = typeof settings.$inferSelect;
+export type QrCode = typeof qrCodes.$inferSelect;
 
 // Insert types
 export type InsertItem = z.infer<typeof insertItemSchema>;
@@ -76,6 +89,7 @@ export type InsertLocation = z.infer<typeof insertLocationSchema>;
 export type InsertLoan = z.infer<typeof insertLoanSchema>;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
+export type InsertQrCode = z.infer<typeof insertQrCodeSchema>;
 
 // Extended schemas for forms
 export const itemFormSchema = insertItemSchema.extend({
@@ -89,4 +103,9 @@ export const loanFormSchema = insertLoanSchema.extend({
   borrowerEmail: z.string().email("Invalid email address").optional().or(z.literal("")),
   borrowerPhone: z.string().optional().or(z.literal("")),
   dueDate: z.date({ required_error: "Due date is required" }),
+});
+
+export const qrCodeFormSchema = insertQrCodeSchema.extend({
+  qrCodeId: z.string().min(3, "QR Code ID must be at least 3 characters"),
+  description: z.string().optional().or(z.literal("")),
 });
