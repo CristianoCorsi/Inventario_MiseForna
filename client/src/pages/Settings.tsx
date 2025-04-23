@@ -288,6 +288,7 @@ export default function Settings() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="sqlite">SQLite (Default)</SelectItem>
+                      <SelectItem value="postgresql">PostgreSQL</SelectItem>
                       <SelectItem value="mysql">MySQL</SelectItem>
                       <SelectItem value="mssql">Microsoft SQL Server</SelectItem>
                     </SelectContent>

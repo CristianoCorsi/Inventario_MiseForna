@@ -7,6 +7,8 @@ import {
   QrCode, InsertQrCode,
   items, locations, loans, activities, settings, qrCodes
 } from "@shared/schema";
+import { db } from './db';
+import { eq, and, or, isNull, desc, asc, lt } from 'drizzle-orm';
 
 export interface IStorage {
   // Items
@@ -453,4 +455,340 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  // Item methods
+  async getItems(): Promise<Item[]> {
+    return db.select().from(items);
+  }
+  
+  async getItem(id: number): Promise<Item | undefined> {
+    const [item] = await db.select().from(items).where(eq(items.id, id));
+    return item;
+  }
+  
+  async getItemByItemId(itemId: string): Promise<Item | undefined> {
+    const [item] = await db.select().from(items).where(eq(items.itemId, itemId));
+    return item;
+  }
+  
+  async createItem(item: InsertItem): Promise<Item> {
+    const [newItem] = await db.insert(items).values(item).returning();
+    return newItem;
+  }
+  
+  async updateItem(id: number, item: Partial<InsertItem>): Promise<Item | undefined> {
+    const [updatedItem] = await db
+      .update(items)
+      .set(item)
+      .where(eq(items.id, id))
+      .returning();
+    return updatedItem;
+  }
+  
+  async deleteItem(id: number): Promise<boolean> {
+    const [deletedItem] = await db
+      .delete(items)
+      .where(eq(items.id, id))
+      .returning();
+    return !!deletedItem;
+  }
+  
+  // Location methods
+  async getLocations(): Promise<Location[]> {
+    return db.select().from(locations);
+  }
+  
+  async getLocation(id: number): Promise<Location | undefined> {
+    const [location] = await db.select().from(locations).where(eq(locations.id, id));
+    return location;
+  }
+  
+  async createLocation(location: InsertLocation): Promise<Location> {
+    const [newLocation] = await db.insert(locations).values(location).returning();
+    return newLocation;
+  }
+  
+  async updateLocation(id: number, location: Partial<InsertLocation>): Promise<Location | undefined> {
+    const [updatedLocation] = await db
+      .update(locations)
+      .set(location)
+      .where(eq(locations.id, id))
+      .returning();
+    return updatedLocation;
+  }
+  
+  async deleteLocation(id: number): Promise<boolean> {
+    const [deletedLocation] = await db
+      .delete(locations)
+      .where(eq(locations.id, id))
+      .returning();
+    return !!deletedLocation;
+  }
+  
+  // Loan methods
+  async getLoans(): Promise<Loan[]> {
+    return db.select().from(loans);
+  }
+  
+  async getLoan(id: number): Promise<Loan | undefined> {
+    const [loan] = await db.select().from(loans).where(eq(loans.id, id));
+    return loan;
+  }
+  
+  async getLoansByItemId(itemId: number): Promise<Loan[]> {
+    return db.select().from(loans).where(eq(loans.itemId, itemId));
+  }
+  
+  async getOverdueLoans(): Promise<Loan[]> {
+    const now = new Date();
+    return db
+      .select()
+      .from(loans)
+      .where(
+        and(
+          eq(loans.status, 'active'),
+          lt(loans.dueDate, now)
+        )
+      );
+  }
+  
+  async getActiveLoans(): Promise<Loan[]> {
+    return db
+      .select()
+      .from(loans)
+      .where(
+        and(
+          or(
+            eq(loans.status, 'active'),
+            eq(loans.status, 'overdue')
+          ),
+          isNull(loans.returnDate)
+        )
+      );
+  }
+  
+  async createLoan(loan: InsertLoan): Promise<Loan> {
+    const [newLoan] = await db.insert(loans).values(loan).returning();
+    
+    // Update the item status to 'loaned'
+    const item = await this.getItem(loan.itemId);
+    if (item) {
+      await this.updateItem(item.id, { status: 'loaned' });
+    }
+    
+    return newLoan;
+  }
+  
+  async updateLoan(id: number, loan: Partial<InsertLoan>): Promise<Loan | undefined> {
+    const [updatedLoan] = await db
+      .update(loans)
+      .set(loan)
+      .where(eq(loans.id, id))
+      .returning();
+    return updatedLoan;
+  }
+  
+  async returnLoan(id: number, returnDate: Date = new Date()): Promise<Loan | undefined> {
+    const loan = await this.getLoan(id);
+    if (!loan) return undefined;
+    
+    const [updatedLoan] = await db
+      .update(loans)
+      .set({ 
+        returnDate, 
+        status: 'returned' 
+      })
+      .where(eq(loans.id, id))
+      .returning();
+    
+    // Update the item status back to 'available'
+    const item = await this.getItem(loan.itemId);
+    if (item) {
+      await this.updateItem(item.id, { status: 'available' });
+    }
+    
+    return updatedLoan;
+  }
+  
+  async deleteLoan(id: number): Promise<boolean> {
+    const [deletedLoan] = await db
+      .delete(loans)
+      .where(eq(loans.id, id))
+      .returning();
+    return !!deletedLoan;
+  }
+  
+  // Activity methods
+  async getActivities(limit?: number): Promise<Activity[]> {
+    if (limit) {
+      return db
+        .select()
+        .from(activities)
+        .orderBy(desc(activities.timestamp))
+        .limit(limit);
+    } else {
+      return db
+        .select()
+        .from(activities)
+        .orderBy(desc(activities.timestamp));
+    }
+  }
+  
+  async getActivitiesByItemId(itemId: number): Promise<Activity[]> {
+    return db
+      .select()
+      .from(activities)
+      .where(eq(activities.itemId, itemId))
+      .orderBy(desc(activities.timestamp));
+  }
+  
+  async createActivity(activity: InsertActivity): Promise<Activity> {
+    const [newActivity] = await db
+      .insert(activities)
+      .values({
+        ...activity,
+        timestamp: activity.timestamp || new Date()
+      })
+      .returning();
+    return newActivity;
+  }
+  
+  // Settings methods
+  async getSetting(key: string): Promise<Setting | undefined> {
+    const [setting] = await db
+      .select()
+      .from(settings)
+      .where(eq(settings.key, key));
+    return setting;
+  }
+  
+  async updateSetting(key: string, value: string): Promise<Setting> {
+    // Check if setting exists
+    const existingSetting = await this.getSetting(key);
+    
+    if (existingSetting) {
+      const [updatedSetting] = await db
+        .update(settings)
+        .set({ value })
+        .where(eq(settings.key, key))
+        .returning();
+      return updatedSetting;
+    } else {
+      const [newSetting] = await db
+        .insert(settings)
+        .values({ key, value })
+        .returning();
+      return newSetting;
+    }
+  }
+  
+  // QR Code methods
+  async getQrCodes(): Promise<QrCode[]> {
+    return db.select().from(qrCodes);
+  }
+  
+  async getQrCode(id: number): Promise<QrCode | undefined> {
+    const [qrCode] = await db
+      .select()
+      .from(qrCodes)
+      .where(eq(qrCodes.id, id));
+    return qrCode;
+  }
+  
+  async getQrCodeByCodeId(qrCodeId: string): Promise<QrCode | undefined> {
+    const [qrCode] = await db
+      .select()
+      .from(qrCodes)
+      .where(eq(qrCodes.qrCodeId, qrCodeId));
+    return qrCode;
+  }
+  
+  async createQrCode(qrCode: InsertQrCode): Promise<QrCode> {
+    const [newQrCode] = await db
+      .insert(qrCodes)
+      .values({
+        ...qrCode,
+        dateGenerated: qrCode.dateGenerated || new Date(),
+        isAssigned: qrCode.isAssigned || false
+      })
+      .returning();
+    
+    // Log activity for QR code generation
+    await this.createActivity({
+      activityType: "qrGenerated",
+      description: `Generated QR code "${qrCode.qrCodeId}"`,
+      metadata: { qrCodeId: qrCode.qrCodeId }
+    });
+    
+    return newQrCode;
+  }
+  
+  async updateQrCode(id: number, qrCode: Partial<InsertQrCode>): Promise<QrCode | undefined> {
+    const [updatedQrCode] = await db
+      .update(qrCodes)
+      .set(qrCode)
+      .where(eq(qrCodes.id, id))
+      .returning();
+    return updatedQrCode;
+  }
+  
+  async deleteQrCode(id: number): Promise<boolean> {
+    const [deletedQrCode] = await db
+      .delete(qrCodes)
+      .where(eq(qrCodes.id, id))
+      .returning();
+    return !!deletedQrCode;
+  }
+  
+  async getUnassignedQrCodes(): Promise<QrCode[]> {
+    return db
+      .select()
+      .from(qrCodes)
+      .where(eq(qrCodes.isAssigned, false));
+  }
+  
+  async associateQrCodeWithItem(qrCodeId: string, itemId: number): Promise<QrCode | undefined> {
+    // Find the QR code
+    const qrCode = await this.getQrCodeByCodeId(qrCodeId);
+    if (!qrCode) return undefined;
+    
+    // Check if the item exists
+    const item = await this.getItem(itemId);
+    if (!item) return undefined;
+    
+    // Update the QR code
+    const updatedQrCode = await this.updateQrCode(qrCode.id, {
+      isAssigned: true,
+      assignedToItemId: itemId,
+      dateAssigned: new Date()
+    });
+    
+    // Update the item
+    await this.updateItem(itemId, {
+      qrCode: qrCodeId
+    });
+    
+    // Log activity
+    await this.createActivity({
+      itemId,
+      activityType: "qrAssociated",
+      description: `Associated QR code "${qrCodeId}" with item "${item.name}"`,
+      metadata: { qrCodeId, itemId: item.itemId }
+    });
+    
+    return updatedQrCode;
+  }
+}
+
+// Set up database based on settings or fall back to in-memory storage
+let storage: IStorage;
+
+// For now, always use database storage because we now have PostgreSQL set up
+storage = new DatabaseStorage();
+
+// Fallback to memory storage
+if (!storage) {
+  storage = new MemStorage();
+}
+
+export { storage };
