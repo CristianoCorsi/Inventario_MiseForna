@@ -68,19 +68,85 @@ import { t } from "@/lib/i18n";
 
 export default function QRCodes() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [printMode, setPrintMode] = useState<'single' | 'multi'>('single');
   const [labelsPerPage, setLabelsPerPage] = useState("12");
+  const [activeTab, setActiveTab] = useState<'items' | 'pregenerated'>('items');
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [qrPrefix, setQrPrefix] = useState("ITEM-");
+  const [qrQuantity, setQrQuantity] = useState("10");
+  const [qrDescription, setQrDescription] = useState("");
+  const [selectedQrCodes, setSelectedQrCodes] = useState<number[]>([]);
   const printRef = useRef<HTMLDivElement>(null);
   
+  // Queries for items and their locations
   const { data: items, isLoading } = useQuery<Item[]>({
     queryKey: ["/api/items"],
   });
   
   const { data: locations } = useQuery({
     queryKey: ["/api/locations"]
+  });
+  
+  // Query for unassigned QR codes
+  const { 
+    data: unassignedQrCodes, 
+    isLoading: isLoadingQrCodes 
+  } = useQuery<QrCode[]>({
+    queryKey: ["/api/qrcodes/unassigned"],
+  });
+  
+  // Mutation for generating batch QR codes
+  const generateQrCodesMutation = useMutation({
+    mutationFn: async (data: { prefix: string; quantity: number; description?: string }) => {
+      return await apiRequest("/api/qrcodes/batch", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: t("qrcode.generated"),
+        description: t("qrcode.generatedSuccess"),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/qrcodes/unassigned"] });
+      setQrDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: t("app.error"),
+        description: t("qrcode.generationFailed"),
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Mutation for associating QR code with item
+  const associateQrCodeMutation = useMutation({
+    mutationFn: async (data: { qrCodeId: string; itemId: number }) => {
+      return await apiRequest("/api/qrcodes/associate", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: (data, variables) => {
+      toast({
+        title: t("qrcode.associated"),
+        description: t("qrcode.associatedSuccess"),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/qrcodes/unassigned"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/items"] });
+    },
+    onError: (error) => {
+      toast({
+        title: t("app.error"),
+        description: t("qrcode.associationFailed"),
+        variant: "destructive",
+      });
+    },
   });
   
   // Filter items
@@ -151,32 +217,241 @@ export default function QRCodes() {
   
   const handleScanQR = () => {
     toast({
-      title: "Scanner",
-      description: "QR scanner functionality will be implemented soon."
+      title: t("qrcode.scanner"),
+      description: t("qrcode.scannerSoon")
+    });
+  };
+  
+  const handleToggleQrCode = (qrCodeId: number) => {
+    setSelectedQrCodes(prev => 
+      prev.includes(qrCodeId) 
+        ? prev.filter(id => id !== qrCodeId) 
+        : [...prev, qrCodeId]
+    );
+  };
+  
+  const handleGenerateQrCodes = () => {
+    if (generateQrCodesMutation.isPending) return;
+    
+    const quantity = parseInt(qrQuantity, 10);
+    if (isNaN(quantity) || quantity <= 0 || quantity > 100) {
+      toast({
+        title: t("app.error"),
+        description: t("qrcode.quantityInvalid"),
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    generateQrCodesMutation.mutate({
+      prefix: qrPrefix,
+      quantity,
+      description: qrDescription || undefined,
+    });
+  };
+  
+  const handleOpenQrDialog = () => {
+    setQrDialogOpen(true);
+  };
+  
+  const handleAssociateQrCode = (qrCode: QrCode, itemId: number) => {
+    if (!qrCode || !itemId || associateQrCodeMutation.isPending) return;
+    
+    associateQrCodeMutation.mutate({
+      qrCodeId: qrCode.qrCodeId,
+      itemId,
     });
   };
   
   return (
     <div className="py-6 mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
       <div className="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">QR Code Generator</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">{t('qrcode.title')}</h1>
         <div className="mt-3 flex sm:mt-0 sm:ml-4">
+          <Button variant="outline" onClick={handleOpenQrDialog} className="mr-3">
+            <QrCodeIcon className="h-4 w-4 mr-2" />
+            {t('qrcode.preGenerate')}
+          </Button>
           <Button variant="outline" onClick={handleScanQR} className="mr-3">
             <ScanIcon className="h-4 w-4 mr-2" />
-            Scan QR Code
+            {t('qrcode.scanToAssociate')}
           </Button>
-          <Button disabled={selectedItems.length === 0} onClick={handlePrint}>
+          <Button 
+            disabled={activeTab === 'items' ? selectedItems.length === 0 : selectedQrCodes.length === 0} 
+            onClick={handlePrint}
+          >
             <PrinterIcon className="h-4 w-4 mr-2" />
-            Print Selected
+            {t('qrcode.print')}
           </Button>
         </div>
       </div>
       
-      <Tabs defaultValue="select" className="mt-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="select">Select Items</TabsTrigger>
-          <TabsTrigger value="preview" disabled={selectedItems.length === 0}>Preview Labels</TabsTrigger>
+      <Tabs 
+        value={activeTab === 'items' ? 'select' : 'pregenerated'} 
+        onValueChange={(value) => {
+          if (value === 'pregenerated') {
+            setActiveTab('pregenerated');
+          } else {
+            setActiveTab('items');
+          }
+        }}
+        className="mt-6"
+      >
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="select">
+            <TagIcon className="h-4 w-4 mr-2" />
+            {t('inventory.title')}
+          </TabsTrigger>
+          <TabsTrigger value="pregenerated">
+            <Table2Icon className="h-4 w-4 mr-2" />
+            {t('qrcode.emptyCodesList')}
+          </TabsTrigger>
+          <TabsTrigger 
+            value="preview" 
+            disabled={activeTab === 'items' ? selectedItems.length === 0 : selectedQrCodes.length === 0}
+          >
+            <QrCodeIcon className="h-4 w-4 mr-2" />
+            {t('qrcode.print')}
+          </TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="pregenerated">
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>{t('qrcode.emptyCodesList')}</CardTitle>
+              <CardDescription>
+                {t('qrcode.emptyCodesDescription')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingQrCodes ? (
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center p-3 border rounded-md">
+                      <Skeleton className="h-4 w-4 mr-4" />
+                      <div className="flex-1">
+                        <Skeleton className="h-5 w-1/3 mb-1" />
+                        <Skeleton className="h-4 w-1/4" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : unassignedQrCodes && unassignedQrCodes.length > 0 ? (
+                <div>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[40px]">
+                            <Checkbox 
+                              checked={
+                                unassignedQrCodes.length > 0 && 
+                                selectedQrCodes.length === unassignedQrCodes.length
+                              }
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedQrCodes(unassignedQrCodes.map(qr => qr.id));
+                                } else {
+                                  setSelectedQrCodes([]);
+                                }
+                              }}
+                            />
+                          </TableHead>
+                          <TableHead>{t('qrcode.code')}</TableHead>
+                          <TableHead>{t('app.description')}</TableHead>
+                          <TableHead>{t('qrcode.dateGenerated')}</TableHead>
+                          <TableHead>{t('app.actions')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {unassignedQrCodes.map(qrCode => (
+                          <TableRow key={qrCode.id}>
+                            <TableCell>
+                              <Checkbox 
+                                checked={selectedQrCodes.includes(qrCode.id)}
+                                onCheckedChange={() => handleToggleQrCode(qrCode.id)}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">{qrCode.qrCodeId}</TableCell>
+                            <TableCell>{qrCode.description}</TableCell>
+                            <TableCell>
+                              {new Date(qrCode.dateGenerated).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontalIcon className="h-4 w-4" />
+                                    <span className="sr-only">{t('app.openMenu')}</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>{t('app.actions')}</DropdownMenuLabel>
+                                  <DropdownMenuItem onClick={() => {
+                                    // Open dialog to select an item to associate with
+                                  }}>
+                                    <ArrowRightIcon className="mr-2 h-4 w-4" />
+                                    {t('qrcode.associateWithItem')}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem>
+                                    <PrinterIcon className="mr-2 h-4 w-4" />
+                                    {t('qrcode.print')}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  
+                  <div className="flex justify-between items-center mt-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedQrCodes.length} {t('qrcode.selected')} 
+                        {selectedQrCodes.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedQrCodes([])}
+                            className="ml-2"
+                          >
+                            {t('app.clearSelection')}
+                          </Button>
+                        )}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleOpenQrDialog}
+                      size="sm"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-2" />
+                      {t('qrcode.generateNew')}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <QrCodeIcon className="h-12 w-12 mx-auto text-gray-400" />
+                  <h3 className="mt-4 text-lg font-medium text-gray-900">
+                    {t('qrcode.noEmptyCodes')}
+                  </h3>
+                  <p className="mt-2 text-sm text-gray-500">
+                    {t('qrcode.noEmptyCodesDescription')}
+                  </p>
+                  <div className="mt-6">
+                    <Button onClick={handleOpenQrDialog}>
+                      <PlusIcon className="h-4 w-4 mr-2" />
+                      {t('qrcode.generateNew')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         <TabsContent value="select">
           <Card className="mb-6">
@@ -448,6 +723,80 @@ export default function QRCodes() {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* QR Code Generation Dialog */}
+      <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('qrcode.generateNew')}</DialogTitle>
+            <DialogDescription>
+              {t('qrcode.generateNewDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="qr-prefix">{t('qrcode.prefix')}</Label>
+              <Input
+                id="qr-prefix"
+                value={qrPrefix}
+                onChange={(e) => setQrPrefix(e.target.value)}
+                placeholder="ITEM-"
+              />
+              <p className="text-sm text-muted-foreground">
+                {t('qrcode.prefixHelp')}
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="qr-quantity">{t('qrcode.quantity')}</Label>
+              <Input
+                id="qr-quantity"
+                value={qrQuantity}
+                onChange={(e) => setQrQuantity(e.target.value)}
+                type="number"
+                min="1"
+                max="100"
+              />
+              <p className="text-sm text-muted-foreground">
+                {t('qrcode.quantityHelp')}
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="qr-description">{t('app.description')}</Label>
+              <Input
+                id="qr-description"
+                value={qrDescription}
+                onChange={(e) => setQrDescription(e.target.value)}
+                placeholder={t('qrcode.descriptionPlaceholder')}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="sm:justify-between">
+            <Button 
+              variant="ghost" 
+              onClick={() => setQrDialogOpen(false)} 
+              disabled={generateQrCodesMutation.isPending}
+            >
+              {t('app.cancel')}
+            </Button>
+            <Button
+              type="submit"
+              onClick={handleGenerateQrCodes}
+              disabled={!qrPrefix || !qrQuantity || parseInt(qrQuantity) < 1 || generateQrCodesMutation.isPending}
+            >
+              {generateQrCodesMutation.isPending ? (
+                <span className="flex items-center">
+                  <AlertCircle className="mr-2 h-4 w-4 animate-spin" />
+                  {t('app.generating')}
+                </span>
+              ) : t('app.generate')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
