@@ -23,24 +23,70 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
-      <ProtectedRoute path="/" component={
-        () => (
-          <Layout>
-            <Switch>
-              <Route path="/" component={Dashboard} />
-              <Route path="/inventory" component={Inventory} />
-              <Route path="/inventory/:id" component={ItemDetail} />
-              <Route path="/qrcodes" component={QRCodes} />
-              <Route path="/loans" component={Loans} />
-              <Route path="/reports" component={Reports} />
-              <Route path="/settings" component={Settings} />
-              <Route path="/profile" component={Profile} />
-              <Route path="/admin" component={Admin} />
-              <Route component={NotFound} />
-            </Switch>
-          </Layout>
-        )
-      } />
+      
+      {/* Dashboard route */}
+      <ProtectedRoute path="/" component={() => (
+        <Layout>
+          <Dashboard />
+        </Layout>
+      )} />
+      
+      {/* Inventory routes */}
+      <ProtectedRoute path="/inventory" component={() => (
+        <Layout>
+          <Inventory />
+        </Layout>
+      )} />
+      
+      <ProtectedRoute path="/inventory/:id" component={() => (
+        <Layout>
+          <ItemDetail />
+        </Layout>
+      )} />
+      
+      {/* QR Codes route */}
+      <ProtectedRoute path="/qrcodes" component={() => (
+        <Layout>
+          <QRCodes />
+        </Layout>
+      )} />
+      
+      {/* Loans route */}
+      <ProtectedRoute path="/loans" component={() => (
+        <Layout>
+          <Loans />
+        </Layout>
+      )} />
+      
+      {/* Reports route */}
+      <ProtectedRoute path="/reports" component={() => (
+        <Layout>
+          <Reports />
+        </Layout>
+      )} />
+      
+      {/* Settings route */}
+      <ProtectedRoute path="/settings" component={() => (
+        <Layout>
+          <Settings />
+        </Layout>
+      )} />
+      
+      {/* Profile route */}
+      <ProtectedRoute path="/profile" component={() => (
+        <Layout>
+          <Profile />
+        </Layout>
+      )} />
+      
+      {/* Admin route */}
+      <ProtectedRoute path="/admin" component={() => (
+        <Layout>
+          <Admin />
+        </Layout>
+      )} />
+      
+      {/* Fallback for unknown routes */}
       <Route component={NotFound} />
     </Switch>
   );

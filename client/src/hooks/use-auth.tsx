@@ -7,6 +7,7 @@ import {
 import { User, LoginData, RegisterData } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/lib/i18n";
 
 type AuthContextType = {
   user: User | null;
@@ -21,6 +22,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const { t } = useTranslation();
   
   const {
     data: user,
@@ -39,14 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (user: User) => {
       queryClient.setQueryData(["/api/user"], user);
       toast({
-        title: "Login successful",
-        description: "Welcome back!",
+        title: t("auth.loginSuccess"),
+        description: t("auth.welcomeBack"),
       });
     },
     onError: (error: Error) => {
+      console.error("Login error:", error);
       toast({
-        title: "Login failed",
-        description: "Invalid username or password",
+        title: t("auth.loginError"),
+        description: t("auth.invalidCredentials"),
         variant: "destructive",
       });
     },
@@ -60,14 +63,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (user: User) => {
       queryClient.setQueryData(["/api/user"], user);
       toast({
-        title: "Registration successful",
-        description: "Your account has been created",
+        title: t("auth.registerSuccess"),
+        description: t("auth.accountCreated"),
       });
     },
     onError: (error: Error) => {
+      console.error("Registration error:", error);
       toast({
-        title: "Registration failed",
-        description: "There was an error creating your account",
+        title: t("auth.registerError"),
+        description: t("auth.registrationErrorMessage"),
         variant: "destructive",
       });
     },
@@ -80,13 +84,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
       toast({
-        title: "Logged out",
-        description: "You have been logged out successfully",
+        title: t("auth.logoutSuccess"),
+        description: t("auth.loggedOutMessage"),
       });
     },
     onError: (error: Error) => {
+      console.error("Logout error:", error);
       toast({
-        title: "Logout failed",
+        title: t("auth.logoutError"),
         description: error.message,
         variant: "destructive",
       });
