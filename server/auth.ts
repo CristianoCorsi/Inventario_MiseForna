@@ -58,15 +58,15 @@ export function setupAuth(app: Express) {
         if (!user) {
           return done(null, false, { message: "Invalid username or password" });
         }
-        
+
         const isValid = await comparePasswords(password, user.password);
         if (!isValid) {
           return done(null, false, { message: "Invalid username or password" });
         }
-        
+
         // Update last login time
         await storage.updateLastLogin(user.id);
-        
+
         return done(null, user);
       } catch (error) {
         return done(error);
@@ -92,16 +92,16 @@ export function setupAuth(app: Express) {
   app.post("/api/register", async (req, res) => {
     try {
       const { username, password, email, fullName, role } = req.body;
-      
+
       // Check if user already exists
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
         return res.status(400).json({ error: "Username already exists" });
       }
-      
+
       // Hash password
       const hashedPassword = await hashPassword(password);
-      
+
       // Create user - Convertire l'oggetto preferences in stringa JSON per SQLite
       const user = await storage.createUser({
         username,
@@ -112,10 +112,10 @@ export function setupAuth(app: Express) {
         isActive: true,
         preferences: JSON.stringify({})
       });
-      
+
       // Remove password from response
       const { password: _, ...userWithoutPassword } = user;
-      
+
       res.status(201).json(userWithoutPassword);
     } catch (error) {
       res.status(500).json({ error: "Error creating user" });
@@ -170,21 +170,21 @@ export function setupAuth(app: Express) {
     try {
       const user = req.user as Express.User;
       const { fullName, email, preferences } = req.body;
-      
+
       const updatedUser = await storage.updateUser(user.id, {
         fullName,
         email,
         // Convertire preferences in stringa JSON se presente
         preferences: preferences ? JSON.stringify(preferences) : undefined
       });
-      
+
       if (!updatedUser) {
         return res.status(404).json({ error: "User not found" });
       }
-      
+
       // Remove password from response
       const { password: _, ...userWithoutPassword } = updatedUser;
-      
+
       res.json(userWithoutPassword);
     } catch (error) {
       res.status(500).json({ error: "Error updating profile" });
@@ -195,25 +195,25 @@ export function setupAuth(app: Express) {
     try {
       const user = req.user as Express.User;
       const { currentPassword, newPassword } = req.body;
-      
+
       // Verify current password
       const isValid = await comparePasswords(currentPassword, user.password);
       if (!isValid) {
         return res.status(400).json({ error: "Current password is incorrect" });
       }
-      
+
       // Hash new password
       const hashedPassword = await hashPassword(newPassword);
-      
+
       // Update password
       const updated = await storage.updateUser(user.id, {
         password: hashedPassword
       });
-      
+
       if (!updated) {
         return res.status(404).json({ error: "User not found" });
       }
-      
+
       res.json({ message: "Password changed successfully" });
     } catch (error) {
       res.status(500).json({ error: "Error changing password" });
@@ -224,13 +224,13 @@ export function setupAuth(app: Express) {
   app.get("/api/admin/users", isAdmin, async (req, res) => {
     try {
       const users = await storage.getUsers();
-      
+
       // Remove passwords from response
       const usersWithoutPasswords = users.map(user => {
         const { password: _, ...userWithoutPassword } = user;
         return userWithoutPassword;
       });
-      
+
       res.json(usersWithoutPasswords);
     } catch (error) {
       res.status(500).json({ error: "Error fetching users" });
@@ -240,16 +240,16 @@ export function setupAuth(app: Express) {
   app.post("/api/admin/users", isAdmin, async (req, res) => {
     try {
       const { username, password, email, fullName, role } = req.body;
-      
+
       // Check if user already exists
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
         return res.status(400).json({ error: "Username already exists" });
       }
-      
+
       // Hash password
       const hashedPassword = await hashPassword(password);
-      
+
       // Create user - Convertire l'oggetto preferences in stringa JSON per SQLite
       const user = await storage.createUser({
         username,
@@ -260,10 +260,10 @@ export function setupAuth(app: Express) {
         isActive: true,
         preferences: JSON.stringify({})
       });
-      
+
       // Remove password from response
       const { password: _, ...userWithoutPassword } = user;
-      
+
       res.status(201).json(userWithoutPassword);
     } catch (error) {
       res.status(500).json({ error: "Error creating user" });
@@ -274,13 +274,13 @@ export function setupAuth(app: Express) {
     try {
       const userId = parseInt(req.params.id);
       const { username, email, fullName, role, isActive } = req.body;
-      
+
       // Check if user exists
       const existingUser = await storage.getUser(userId);
       if (!existingUser) {
         return res.status(404).json({ error: "User not found" });
       }
-      
+
       // Update user
       const updatedUser = await storage.updateUser(userId, {
         username,
@@ -289,10 +289,10 @@ export function setupAuth(app: Express) {
         role,
         isActive
       });
-      
+
       // Remove password from response
       const { password: _, ...userWithoutPassword } = updatedUser!;
-      
+
       res.json(userWithoutPassword);
     } catch (error) {
       res.status(500).json({ error: "Error updating user" });
@@ -302,20 +302,20 @@ export function setupAuth(app: Express) {
   app.delete("/api/admin/users/:id", isAdmin, async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
-      
+
       // Check if user exists
       const existingUser = await storage.getUser(userId);
       if (!existingUser) {
         return res.status(404).json({ error: "User not found" });
       }
-      
+
       // Delete user
       const deleted = await storage.deleteUser(userId);
-      
+
       if (!deleted) {
         return res.status(500).json({ error: "Error deleting user" });
       }
-      
+
       res.json({ message: "User deleted successfully" });
     } catch (error) {
       res.status(500).json({ error: "Error deleting user" });
@@ -326,25 +326,25 @@ export function setupAuth(app: Express) {
     try {
       const userId = parseInt(req.params.id);
       const { newPassword } = req.body;
-      
+
       // Check if user exists
       const existingUser = await storage.getUser(userId);
       if (!existingUser) {
         return res.status(404).json({ error: "User not found" });
       }
-      
+
       // Hash new password
       const hashedPassword = await hashPassword(newPassword);
-      
+
       // Update password
       const updated = await storage.updateUser(userId, {
         password: hashedPassword
       });
-      
+
       if (!updated) {
         return res.status(500).json({ error: "Error resetting password" });
       }
-      
+
       res.json({ message: "Password reset successfully" });
     } catch (error) {
       res.status(500).json({ error: "Error resetting password" });
@@ -359,10 +359,10 @@ export function setupAuth(app: Express) {
 async function createDefaultAdminUser() {
   try {
     const users = await storage.getUsers();
-    
+
     if (users.length === 0) {
       const hashedPassword = await hashPassword("admin");
-      
+
       // Convertire l'oggetto preferences in stringa JSON per SQLite
       const userToCreate = {
         username: "admin",
@@ -372,9 +372,9 @@ async function createDefaultAdminUser() {
         isActive: true,
         preferences: JSON.stringify({})
       };
-      
+
       await storage.createUser(userToCreate);
-      
+
       console.log("Created default admin user: admin/admin");
     }
   } catch (error) {
