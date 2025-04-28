@@ -121,7 +121,7 @@ export default function AdminPage() {
   // Fetch users
   const { data: users, isLoading, isError } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
-    queryFn: getQueryFn(),
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   // Mutations
