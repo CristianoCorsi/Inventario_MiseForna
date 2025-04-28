@@ -13,7 +13,12 @@ import {
 import { db } from './db';
 import { eq, and, or, isNull, desc, asc, lt } from 'drizzle-orm';
 
+import session from "express-session";
+
 export interface IStorage {
+  // Session store for authentication
+  sessionStore: session.Store;
+  
   // Items
   getItems(): Promise<Item[]>;
   getItem(id: number): Promise<Item | undefined>;
@@ -71,7 +76,13 @@ export interface IStorage {
   changePassword(id: number, currentPassword: string, newPassword: string): Promise<boolean>;
 }
 
+import createMemoryStore from "memorystore";
+
+const MemoryStore = createMemoryStore(session);
+
 export class MemStorage implements IStorage {
+  sessionStore: session.Store;
+  
   private items: Map<number, Item>;
   private locations: Map<number, Location>;
   private loans: Map<number, Loan>;
@@ -89,6 +100,10 @@ export class MemStorage implements IStorage {
   private userCurrentId: number;
   
   constructor() {
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // 24 hours
+    });
+    
     this.items = new Map();
     this.locations = new Map();
     this.loans = new Map();
@@ -444,7 +459,20 @@ export class MemStorage implements IStorage {
   }
 }
 
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
+
 export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
+  
+  constructor() {
+    const PostgresSessionStore = connectPg(session);
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      tableName: 'sessions',
+      createTableIfMissing: true
+    });
+  }
   // Item methods
   async getItems(): Promise<Item[]> {
     return db.select().from(items);

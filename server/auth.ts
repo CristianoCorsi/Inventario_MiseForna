@@ -33,20 +33,12 @@ async function comparePasswords(supplied: string, stored: string): Promise<boole
 
 // Authentication setup
 export function setupAuth(app: Express) {
-  // Configure session store using PostgreSQL
-  const PostgresSessionStore = connectPg(session);
-  const sessionStore = new PostgresSessionStore({
-    pool,
-    tableName: 'sessions',
-    createTableIfMissing: true
-  });
-
   // Session configuration
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || 'inventory-management-secret',
     resave: false,
     saveUninitialized: false,
-    store: sessionStore,
+    store: storage.sessionStore,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 1 day
       secure: process.env.NODE_ENV === 'production',
