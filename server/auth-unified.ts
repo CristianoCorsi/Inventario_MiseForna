@@ -5,80 +5,102 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage-unified";
-import { User as SelectUser } from "@shared/schema-unified";
-import { dbConfig } from "./db-unified";
+import { User } from "@shared/schema-unified";
+import { t } from "../client/src/lib/i18n";
 
 declare global {
   namespace Express {
-    interface User extends SelectUser {}
+    interface User extends User {}
   }
 }
 
 const scryptAsync = promisify(scrypt);
 
-// Password utilities
+/**
+ * Cripta una password usando scrypt
+ * @param password La password in chiaro
+ * @returns La password criptata con il salt
+ */
 async function hashPassword(password: string): Promise<string> {
+  // Genera un salt casuale
   const salt = randomBytes(16).toString("hex");
+  // Cripta la password con il salt
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  // Restituisci la password criptata con il salt
   return `${buf.toString("hex")}.${salt}`;
 }
 
+/**
+ * Verifica che una password corrisponda a quella salvata
+ * @param supplied La password fornita
+ * @param stored La password salvata
+ * @returns true se le password corrispondono
+ */
 async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
+  // Estrai hash e salt dalla password salvata
   const [hashed, salt] = stored.split(".");
+  // Crea il buffer dall'hash
   const hashedBuf = Buffer.from(hashed, "hex");
+  // Genera l'hash della password fornita con lo stesso salt
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  // Confronta gli hash in modo sicuro
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
-// Authentication setup
+/**
+ * Configura l'autenticazione per l'applicazione
+ * @param app Express application
+ */
 export function setupAuth(app: Express) {
-  // Session configuration
+  // Configura la sessione
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || 'inventory-management-secret',
+    secret: process.env.SESSION_SECRET || "misericordia-secret-key",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 giorni
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax"
     }
   };
 
-  // Initialize session middleware
+  // Configura express per usare la sessione
+  app.set("trust proxy", 1);
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Configure local strategy
+  // Configura la strategia di autenticazione locale
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        // Cerca l'utente per username
         const user = await storage.getUserByUsername(username);
-        if (!user) {
-          return done(null, false, { message: "Invalid username or password" });
+        
+        // Se l'utente non esiste o la password non corrisponde
+        if (!user || !(await comparePasswords(password, user.password))) {
+          return done(null, false, { message: t("auth.invalidCredentials") });
         }
         
-        const isValid = await comparePasswords(password, user.password);
-        if (!isValid) {
-          return done(null, false, { message: "Invalid username or password" });
-        }
-        
-        // Update last login time
+        // Aggiorna l'ultimo accesso
         await storage.updateLastLogin(user.id);
         
+        // Autenticazione riuscita
         return done(null, user);
       } catch (error) {
         return done(error);
       }
-    })
+    }),
   );
 
-  // Serialize/deserialize user
+  // Serializzazione dell'utente (salva solo l'ID nella sessione)
   passport.serializeUser((user, done) => {
     done(null, user.id);
   });
 
+  // Deserializzazione dell'utente (recupera l'utente dall'ID)
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
@@ -88,309 +110,170 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Auth routes
-  app.post("/api/register", async (req, res) => {
+  // Rotta di registrazione
+  app.post("/api/register", async (req, res, next) => {
     try {
-      const { username, password, email, fullName, role } = req.body;
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByUsername(username);
+      // Verifica che l'utente non esista già
+      const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
-        return res.status(400).json({ error: "Username already exists" });
+        return res.status(400).json({ 
+          error: t("validation.usernameExists")
+        });
       }
-      
-      // Hash password
-      const hashedPassword = await hashPassword(password);
-      
-      // Create user
+
+      // Verifica che le password corrispondano
+      if (req.body.password !== req.body.confirmPassword) {
+        return res.status(400).json({ 
+          error: t("validation.passwordMatch")
+        });
+      }
+
+      // Crea l'utente con password criptata
       const user = await storage.createUser({
-        username,
-        password: hashedPassword,
-        email,
-        fullName,
-        role,
-        isActive: true,
-        preferences: {}
+        ...req.body,
+        password: await hashPassword(req.body.password),
+        role: req.body.role || "viewer" // Default role is viewer
       });
-      
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = user;
-      
-      res.status(201).json(userWithoutPassword);
+
+      // Effettua il login automatico
+      req.login(user, (err) => {
+        if (err) return next(err);
+        
+        // Ritorna l'utente creato
+        return res.status(201).json({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role
+        });
+      });
     } catch (error) {
       console.error("Registration error:", error);
-      res.status(500).json({ error: "Error creating user" });
+      return res.status(500).json({ 
+        error: t("auth.registerError"),
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
+  // Rotta di login
   app.post("/api/login", (req, res, next) => {
-    try {
-      passport.authenticate("local", (err: Error, user: Express.User, info: any) => {
-        if (err) {
-          console.error("Login error:", err);
-          return res.status(500).json({ error: "Internal server error" });
-        }
-        if (!user) {
-          return res.status(401).json({ error: info?.message || "Authentication failed" });
-        }
-        req.login(user, (loginErr) => {
-          if (loginErr) {
-            console.error("Login session error:", loginErr);
-            return res.status(500).json({ error: "Error creating session" });
-          }
-          // Remove password from response
-          const { password: _, ...userWithoutPassword } = user;
-          return res.json(userWithoutPassword);
+    passport.authenticate("local", (err: Error, user: Express.User, info: any) => {
+      if (err) {
+        console.error("Authentication error:", err);
+        return res.status(500).json({ 
+          error: t("auth.loginError"),
+          details: err.message 
         });
-      })(req, res, next);
-    } catch (error) {
-      console.error("Unhandled login error:", error);
-      res.status(500).json({ error: "Server error during authentication" });
-    }
+      }
+      
+      if (!user) {
+        return res.status(401).json({ 
+          error: info?.message || t("auth.invalidCredentials") 
+        });
+      }
+      
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error("Login error:", loginErr);
+          return res.status(500).json({ 
+            error: t("auth.loginError"),
+            details: loginErr.message 
+          });
+        }
+        
+        // Ritorna l'utente senza la password
+        return res.status(200).json({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role
+        });
+      });
+    })(req, res, next);
   });
 
-  app.post("/api/logout", (req, res) => {
+  // Rotta di logout
+  app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) {
-        return res.status(500).json({ error: "Logout failed" });
+        console.error("Logout error:", err);
+        return res.status(500).json({ 
+          error: t("auth.logoutError"),
+          details: err.message 
+        });
       }
-      res.json({ message: "Logged out successfully" });
+      res.status(200).json({ message: t("auth.logoutSuccess") });
     });
   });
 
+  // Rotta per ottenere l'utente corrente
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: "Not authenticated" });
     }
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = req.user as Express.User;
-    res.json(userWithoutPassword);
+    
+    // Ritorna l'utente senza la password
+    const user = req.user as Express.User;
+    res.json({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role
+    });
   });
 
-  app.put("/api/user/profile", isAuthenticated, async (req, res) => {
-    try {
-      const user = req.user as Express.User;
-      const { fullName, email, preferences } = req.body;
-      
-      const updatedUser = await storage.updateUser(user.id, {
-        fullName,
-        email,
-        preferences
-      });
-      
-      if (!updatedUser) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = updatedUser;
-      
-      res.json(userWithoutPassword);
-    } catch (error) {
-      res.status(500).json({ error: "Error updating profile" });
-    }
-  });
-
-  app.post("/api/user/change-password", isAuthenticated, async (req, res) => {
-    try {
-      const user = req.user as Express.User;
-      const { currentPassword, newPassword } = req.body;
-      
-      // Verify current password
-      const isValid = await comparePasswords(currentPassword, user.password);
-      if (!isValid) {
-        return res.status(400).json({ error: "Current password is incorrect" });
-      }
-      
-      // Hash new password
-      const hashedPassword = await hashPassword(newPassword);
-      
-      // Update password
-      const updated = await storage.updateUser(user.id, {
-        password: hashedPassword
-      });
-      
-      if (!updated) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      
-      res.json({ message: "Password changed successfully" });
-    } catch (error) {
-      res.status(500).json({ error: "Error changing password" });
-    }
-  });
-
-  // Admin routes
-  app.get("/api/admin/users", isAdmin, async (req, res) => {
-    try {
-      const users = await storage.getUsers();
-      
-      // Remove passwords from response
-      const usersWithoutPasswords = users.map(user => {
-        const { password: _, ...userWithoutPassword } = user;
-        return userWithoutPassword;
-      });
-      
-      res.json(usersWithoutPasswords);
-    } catch (error) {
-      res.status(500).json({ error: "Error fetching users" });
-    }
-  });
-
-  app.post("/api/admin/users", isAdmin, async (req, res) => {
-    try {
-      const { username, password, email, fullName, role } = req.body;
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByUsername(username);
-      if (existingUser) {
-        return res.status(400).json({ error: "Username already exists" });
-      }
-      
-      // Hash password
-      const hashedPassword = await hashPassword(password);
-      
-      // Create user
-      const user = await storage.createUser({
-        username,
-        password: hashedPassword,
-        email,
-        fullName,
-        role,
-        isActive: true,
-        preferences: {}
-      });
-      
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = user;
-      
-      res.status(201).json(userWithoutPassword);
-    } catch (error) {
-      res.status(500).json({ error: "Error creating user" });
-    }
-  });
-
-  app.put("/api/admin/users/:id", isAdmin, async (req, res) => {
-    try {
-      const userId = parseInt(req.params.id);
-      const { username, email, fullName, role, isActive } = req.body;
-      
-      // Check if user exists
-      const existingUser = await storage.getUser(userId);
-      if (!existingUser) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      
-      // Update user
-      const updatedUser = await storage.updateUser(userId, {
-        username,
-        email,
-        fullName,
-        role,
-        isActive
-      });
-      
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = updatedUser!;
-      
-      res.json(userWithoutPassword);
-    } catch (error) {
-      res.status(500).json({ error: "Error updating user" });
-    }
-  });
-
-  app.delete("/api/admin/users/:id", isAdmin, async (req, res) => {
-    try {
-      const userId = parseInt(req.params.id);
-      
-      // Check if user exists
-      const existingUser = await storage.getUser(userId);
-      if (!existingUser) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      
-      // Delete user
-      const deleted = await storage.deleteUser(userId);
-      
-      if (!deleted) {
-        return res.status(500).json({ error: "Error deleting user" });
-      }
-      
-      res.json({ message: "User deleted successfully" });
-    } catch (error) {
-      res.status(500).json({ error: "Error deleting user" });
-    }
-  });
-
-  app.post("/api/admin/users/:id/reset-password", isAdmin, async (req, res) => {
-    try {
-      const userId = parseInt(req.params.id);
-      const { newPassword } = req.body;
-      
-      // Check if user exists
-      const existingUser = await storage.getUser(userId);
-      if (!existingUser) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      
-      // Hash new password
-      const hashedPassword = await hashPassword(newPassword);
-      
-      // Update password
-      const updated = await storage.updateUser(userId, {
-        password: hashedPassword
-      });
-      
-      if (!updated) {
-        return res.status(500).json({ error: "Error resetting password" });
-      }
-      
-      res.json({ message: "Password reset successfully" });
-    } catch (error) {
-      res.status(500).json({ error: "Error resetting password" });
-    }
-  });
-
-  // Create default admin user if none exists
+  // Crea utente admin predefinito se non esiste
   createDefaultAdminUser();
 }
 
-// Create a default admin user if no users exist
+/**
+ * Crea un utente admin predefinito se non esiste
+ */
 async function createDefaultAdminUser() {
   try {
-    const users = await storage.getUsers();
+    const adminUser = await storage.getUserByUsername("admin");
     
-    if (users.length === 0) {
-      const hashedPassword = await hashPassword("admin");
+    if (!adminUser) {
+      console.log("Creating default admin user...");
       
       await storage.createUser({
         username: "admin",
-        password: hashedPassword,
+        password: await hashPassword("admin"),
+        email: null,
         fullName: "Administrator",
         role: "admin",
-        isActive: true,
-        preferences: {}
+        isActive: true
       });
       
-      console.log("Created default admin user: admin/admin");
+      console.log("Default admin user created successfully!");
     }
   } catch (error) {
     console.error("Error creating default admin user:", error);
   }
 }
 
-// Middleware for checking authentication
+/**
+ * Middleware per verificare che l'utente sia autenticato
+ */
 export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
   if (req.isAuthenticated()) {
     return next();
   }
+  
   res.status(401).json({ error: "Not authenticated" });
 }
 
-// Middleware for checking admin role
+/**
+ * Middleware per verificare che l'utente sia un amministratore
+ */
 export function isAdmin(req: Request, res: Response, next: NextFunction) {
   if (req.isAuthenticated() && (req.user as Express.User).role === "admin") {
     return next();
   }
-  res.status(403).json({ error: "Access denied" });
+  
+  res.status(403).json({ error: "Forbidden" });
 }
