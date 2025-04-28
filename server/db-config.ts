@@ -1,15 +1,25 @@
 /**
- * Configurazione dei database supportati
- * Questo file gestisce la configurazione e la selezione del database
+ * Configurazione del database
+ * Supporta più tipi di database: SQLite, PostgreSQL, MySQL, MS SQL
  */
 
-// Tipi di database supportati
+import dotenv from 'dotenv';
+
+// Carica le variabili d'ambiente se non è già stato fatto
+if (!process.env.DB_TYPE) {
+  dotenv.config();
+}
+
 export type DatabaseType = 'sqlite' | 'postgres' | 'mysql' | 'mssql';
 
-// Interfaccia di configurazione del database
-interface DatabaseConfig {
+export interface DatabaseConfig {
   type: DatabaseType;
   url?: string;
+  host?: string;
+  port?: number;
+  username?: string;
+  password?: string;
+  database?: string;
 }
 
 /**
@@ -17,52 +27,31 @@ interface DatabaseConfig {
  * Se non è specificato un tipo di database, SQLite è il default
  */
 export function getDatabaseConfig(): DatabaseConfig {
-  // Verifica se è impostato un tipo specifico di database
-  const dbType = process.env.DB_TYPE as DatabaseType;
+  const dbType = (process.env.DB_TYPE || 'sqlite') as DatabaseType;
   
-  // Se non è specificato, usa SQLite come database predefinito
-  if (!dbType || !['sqlite', 'postgres', 'mysql', 'mssql'].includes(dbType)) {
-    return {
-      type: 'sqlite'
-    };
-  }
+  // Configurazione di base
+  const config: DatabaseConfig = {
+    type: dbType
+  };
   
-  // Configura in base al tipo di database
-  switch(dbType) {
+  // Configurazione specifica per ogni tipo di database
+  switch (dbType) {
     case 'postgres':
-      if (!process.env.DATABASE_URL) {
-        console.warn('PostgreSQL selezionato ma DATABASE_URL non impostato, utilizzando SQLite');
-        return { type: 'sqlite' };
-      }
-      return {
-        type: 'postgres',
-        url: process.env.DATABASE_URL
-      };
-      
+      config.url = process.env.DATABASE_URL;
+      break;
     case 'mysql':
-      if (!process.env.MYSQL_DATABASE_URL) {
-        console.warn('MySQL selezionato ma MYSQL_DATABASE_URL non impostato, utilizzando SQLite');
-        return { type: 'sqlite' };
-      }
-      return {
-        type: 'mysql',
-        url: process.env.MYSQL_DATABASE_URL
-      };
-      
     case 'mssql':
-      if (!process.env.MSSQL_DATABASE_URL) {
-        console.warn('Microsoft SQL Server selezionato ma MSSQL_DATABASE_URL non impostato, utilizzando SQLite');
-        return { type: 'sqlite' };
-      }
-      return {
-        type: 'mssql',
-        url: process.env.MSSQL_DATABASE_URL
-      };
-      
+      config.host = process.env.DB_HOST;
+      config.port = process.env.DB_PORT ? parseInt(process.env.DB_PORT) : undefined;
+      config.username = process.env.DB_USER;
+      config.password = process.env.DB_PASSWORD;
+      config.database = process.env.DB_NAME;
+      break;
     case 'sqlite':
     default:
-      return {
-        type: 'sqlite'
-      };
+      // Per SQLite nessuna configurazione aggiuntiva è necessaria
+      break;
   }
+  
+  return config;
 }
