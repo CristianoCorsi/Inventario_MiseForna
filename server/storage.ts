@@ -5,7 +5,10 @@ import {
   Activity, InsertActivity, 
   Setting, InsertSetting,
   QrCode, InsertQrCode,
-  items, locations, loans, activities, settings, qrCodes
+  User, InsertUser,
+  Session, InsertSession,
+  items, locations, loans, activities, settings, qrCodes,
+  users, sessions
 } from "@shared/schema";
 import { db } from './db';
 import { eq, and, or, isNull, desc, asc, lt } from 'drizzle-orm';
@@ -55,6 +58,17 @@ export interface IStorage {
   // Settings
   getSetting(key: string): Promise<Setting | undefined>;
   updateSetting(key: string, value: string): Promise<Setting>;
+  
+  // Users and Authentication
+  getUsers(): Promise<User[]>;
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
+  resetPassword(id: number, newPassword: string): Promise<User | undefined>;
+  updateLastLogin(id: number): Promise<User | undefined>;
+  changePassword(id: number, currentPassword: string, newPassword: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
