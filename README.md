@@ -8,13 +8,14 @@ Un'applicazione web per la gestione dell'inventario con supporto per codici QR, 
 - Node.js 20.x
 - PostgreSQL 16.x
 
-## Configurazione Ambiente di Sviluppo
+## Configurazione Ambiente di Sviluppo (Locale)
 
-1. Clona il repository su Replit
-2. Installa le dipendenze:
-```bash
-npm install
-```
+1. **Clona il repository**:
+   ```bash
+   git clone <URL_DEL_REPOSITORY>
+   cd <NOME_REPOSITORY>
+  ```
+
 
 3. Configura le variabili d'ambiente nel tool Secrets di Replit:
 - `DATABASE_URL`: URL di connessione al database PostgreSQL
