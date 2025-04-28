@@ -128,6 +128,32 @@ export default function Sidebar({ isMobileOpen, toggleMobileMenu }: SidebarProps
               </svg>
               System Settings
             </Link>
+            
+            <Link 
+              href="/profile" 
+              className={cn(
+                "flex items-center px-2 py-2 mt-1 text-sm font-medium rounded-md",
+                isActive("/profile") ? "sidebar-active" : "text-gray-700 hover:bg-gray-100"
+              )}
+            >
+              <svg className="w-5 h-5 mr-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              My Profile
+            </Link>
+            
+            <Link 
+              href="/admin" 
+              className={cn(
+                "flex items-center px-2 py-2 mt-1 text-sm font-medium rounded-md",
+                isActive("/admin") ? "sidebar-active" : "text-gray-700 hover:bg-gray-100"
+              )}
+            >
+              <svg className="w-5 h-5 mr-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+              Admin
+            </Link>
           </div>
         </nav>
       </aside>

@@ -1,6 +1,16 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LogOut, User, Settings, Shield } from "lucide-react";
 
 interface HeaderProps {
   toggleMobileMenu: () => void;
@@ -8,6 +18,8 @@ interface HeaderProps {
 
 export default function Header({ toggleMobileMenu }: HeaderProps) {
   const { toast } = useToast();
+  const { user, logoutMutation } = useAuth();
+  const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   
   const handleSearch = (e: React.FormEvent) => {
@@ -27,6 +39,18 @@ export default function Header({ toggleMobileMenu }: HeaderProps) {
     toast({
       title: "QR Scan",
       description: "QR scanner functionality will be implemented soon.",
+    });
+  };
+  
+  const handleLogout = () => {
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        navigate("/auth");
+        toast({
+          title: "Logged out",
+          description: "You have been successfully logged out.",
+        });
+      }
     });
   };
   
@@ -83,13 +107,56 @@ export default function Header({ toggleMobileMenu }: HeaderProps) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
           </svg>
         </button>
-        <button className="flex items-center p-1 ml-3 text-gray-500 rounded-full hover:text-secondary hover:bg-gray-100">
-          <img 
-            className="w-8 h-8 rounded-full" 
-            src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
-            alt="User profile" 
-          />
-        </button>
+        
+        {user ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center p-1 ml-3 text-gray-500 rounded-full hover:text-secondary hover:bg-gray-100">
+              <img 
+                className="w-8 h-8 rounded-full" 
+                src={user.profilePicture || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.fullName || user.username)}
+                alt={user.fullName || user.username} 
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>
+                <div className="flex flex-col">
+                  <span>{user.fullName || user.username}</span>
+                  <span className="text-xs text-muted-foreground">{user.email}</span>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/profile" className="flex items-center cursor-pointer">
+                  <User className="w-4 h-4 mr-2" />
+                  <span>Profile</span>
+                </Link>
+              </DropdownMenuItem>
+              {user.role === "admin" && (
+                <DropdownMenuItem asChild>
+                  <Link href="/admin" className="flex items-center cursor-pointer">
+                    <Shield className="w-4 h-4 mr-2" />
+                    <span>Admin</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem asChild>
+                <Link href="/settings" className="flex items-center cursor-pointer">
+                  <Settings className="w-4 h-4 mr-2" />
+                  <span>Settings</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="flex items-center cursor-pointer text-destructive focus:text-destructive">
+                <LogOut className="w-4 h-4 mr-2" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Link href="/auth" className="flex items-center ml-3 px-3 py-1.5 text-sm font-medium text-white bg-secondary rounded-md hover:bg-secondary-focus">
+            Login
+          </Link>
+        )}
       </div>
     </header>
   );
