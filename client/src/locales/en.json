@@ -122,6 +122,13 @@
   "qrcode.exportPdfError": "Error exporting to PDF",
   "qrcode.printSuccess": "QR codes sent to printer",
   "qrcode.noItemsSelected": "No items selected for printing",
+  "qrcode.previewTitle": "Preview & Export",
+  "qrcode.tabs.preview": "Preview and export selected QR codes",
+  "qrcode.printMode": "Print Mode",
+  "qrcode.selectPrintMode": "Select print mode",
+  "qrcode.singleMode": "Single QR code",
+  "qrcode.multiMode": "Multiple QR codes",
+  "qrcode.labelsPerPage": "Labels per page",
 
   "item.details.title": "Item Details",
   "item.details.name": "Name",

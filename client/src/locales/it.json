@@ -122,6 +122,13 @@
   "qrcode.exportPdfError": "Errore durante l'esportazione in PDF",
   "qrcode.printSuccess": "QR code inviati alla stampante",
   "qrcode.noItemsSelected": "Nessun elemento selezionato per la stampa",
+  "qrcode.printMode": "Modalità di stampa",
+  "qrcode.selectPrintMode": "Seleziona modalità di stampa",
+  "qrcode.singleMode": "Singolo QR code",
+  "qrcode.multiMode": "Multipli QR code",
+  "qrcode.labelsPerPage": "Etichette per pagina",
+  "qrcode.previewTitle": "Anteprima & Esporta",
+  "qrcode.tabs.preview": "Anteprima ed esportazione dei QR code selezionati",
 
   "item.details.title": "Dettagli articolo",
   "item.details.name": "Nome",

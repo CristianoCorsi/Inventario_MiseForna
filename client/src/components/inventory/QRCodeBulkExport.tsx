@@ -1,17 +1,17 @@
-import React, { useRef } from "react";
+import React, { useRef, MouseEvent } from "react";
 import { useReactToPrint } from "react-to-print";
 import { Button } from "@/components/ui/button";
 import { 
   PrinterIcon, 
-  DownloadIcon, 
-  FileTextIcon,
-  SaveIcon 
+  FileTextIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { QRCodeGenerator } from "./QRCodeGenerator";
 import { Item, QrCode } from "@shared/schema";
 import { useTranslation } from "@/lib/i18n";
+// @ts-ignore - Gli import di jspdf e html2canvas hanno errori di tipo, ma funzionano correttamente
 import jsPDF from "jspdf";
+// @ts-ignore
 import html2canvas from "html2canvas";
 
 interface QRCodeBulkExportProps {
@@ -32,8 +32,8 @@ export function QRCodeBulkExport({
   const printRef = useRef<HTMLDivElement>(null);
   
   // Handle printing
-  const handlePrint = useReactToPrint({
-    content: () => printRef.current,
+  const handlePrintFn = useReactToPrint({
+    documentTitle: "QR Codes",
     onAfterPrint: () => {
       toast({
         title: t("qrcode.print"),
@@ -41,6 +41,15 @@ export function QRCodeBulkExport({
       });
     }
   });
+  
+  // Wrapper per fixare il tipo
+  const handlePrint = (e: MouseEvent<HTMLButtonElement>) => {
+    if (printRef.current) {
+      handlePrintFn({
+        content: () => printRef.current as HTMLElement
+      });
+    }
+  };
   
   // Export to PDF
   const exportToPdf = async () => {

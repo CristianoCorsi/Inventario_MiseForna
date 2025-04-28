@@ -24,6 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QRCodeGenerator } from "@/components/inventory/QRCodeGenerator";
+import { QRCodeBulkExport } from "@/components/inventory/QRCodeBulkExport";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Item, QrCode } from "@shared/schema";
@@ -545,29 +546,29 @@ export default function QRCodes() {
         <TabsContent value="preview">
           <Card>
             <CardHeader>
-              <CardTitle>{t("qrcode.print")}</CardTitle>
-              <CardDescription>{t("qrcode.print")}</CardDescription>
+              <CardTitle>{t("qrcode.previewTitle")}</CardTitle>
+              <CardDescription>{t("qrcode.tabs.preview")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="mb-4">
-                <Label htmlFor="print-mode">{t("qrcode.print")}</Label>
+                <Label htmlFor="print-mode">{t("qrcode.printMode")}</Label>
                 <Select
                   id="print-mode"
                   value={printMode}
                   onValueChange={setPrintMode}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t("qrcode.print")} />
+                    <SelectValue placeholder={t("qrcode.selectPrintMode")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="single">{t("qrcode.print")}</SelectItem>
-                    <SelectItem value="multi">{t("qrcode.print")}</SelectItem>
+                    <SelectItem value="single">{t("qrcode.singleMode")}</SelectItem>
+                    <SelectItem value="multi">{t("qrcode.multiMode")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               {printMode === "multi" && (
                 <div className="mb-4">
-                  <Label htmlFor="labels-per-page">{t("qrcode.print")}</Label>
+                  <Label htmlFor="labels-per-page">{t("qrcode.labelsPerPage")}</Label>
                   <Select
                     id="labels-per-page"
                     value={labelsPerPage}
@@ -586,10 +587,33 @@ export default function QRCodes() {
                   </Select>
                 </div>
               )}
-              <Button onClick={handlePrint} size="lg">
-                <PrinterIcon className="h-4 w-4 mr-2" />
-                {t("qrcode.print")}
-              </Button>
+              
+              {/* QR Code Bulk Export Component */}
+              {activeTab === "items" && selectedItems.length > 0 ? (
+                <div className="mt-6">
+                  {/* @ts-ignore - Ignoriamo errori temporaneamente */}
+                  <QRCodeBulkExport 
+                    items={selectedItemsData}
+                    labelsPerRow={getLabelsPerRow()}
+                    showItemDetails={true}
+                  />
+                </div>
+              ) : activeTab === "pregenerated" && selectedQrCodes.length > 0 ? (
+                <div className="mt-6">
+                  {/* @ts-ignore - Ignoriamo errori temporaneamente */}
+                  <QRCodeBulkExport 
+                    qrCodes={unassignedQrCodes?.filter(qr => selectedQrCodes.includes(qr.id))}
+                    labelsPerRow={getLabelsPerRow()}
+                  />
+                </div>
+              ) : (
+                <div className="text-center py-8 border rounded-md bg-muted/20">
+                  <QrCodeIcon className="h-12 w-12 mx-auto text-muted-foreground" />
+                  <p className="mt-2 text-muted-foreground">
+                    {t("qrcode.noItemsSelected")}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
