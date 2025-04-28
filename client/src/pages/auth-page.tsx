@@ -79,8 +79,8 @@ export default function AuthPage() {
       const { confirmPassword, ...registerData } = values;
       await registerMutation.mutateAsync(registerData as RegisterData);
       toast({
-        title: "Registration successful",
-        description: "You have been registered and logged in",
+        title: t("auth.registerSuccess"),
+        description: t("auth.accountCreated"),
       });
     } catch (error) {
       console.error("Registration error:", error);
