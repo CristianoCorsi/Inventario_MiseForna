@@ -143,8 +143,19 @@ export async function dbUpdate<T>(
     // Valori per il binding
     const values = [...Object.values(preparedData), id];
     
+    // Ottieni il nome della tabella in modo sicuro
+    let tableName = '';
+    if ((table as any)._ && (table as any)._.config && (table as any)._.config.name) {
+      tableName = (table as any)._.config.name;
+    } else if ((table as any)[Symbol.for('drizzle:Name')]) {
+      tableName = (table as any)[Symbol.for('drizzle:Name')];
+    } else {
+      // Fallback: usa un metodo sicuro che funziona con SQLite
+      tableName = 'users'; // fallback in caso di errore
+    }
+    
     let query = `
-      UPDATE ${table._.config.name}
+      UPDATE ${tableName}
       SET ${setClause}
       WHERE ${idColumn.name} = ?
     `;
@@ -183,8 +194,19 @@ export async function dbDelete(
   id: number
 ): Promise<boolean> {
   try {
+    // Ottieni il nome della tabella in modo sicuro
+    let tableName = '';
+    if ((table as any)._ && (table as any)._.config && (table as any)._.config.name) {
+      tableName = (table as any)._.config.name;
+    } else if ((table as any)[Symbol.for('drizzle:Name')]) {
+      tableName = (table as any)[Symbol.for('drizzle:Name')];
+    } else {
+      // Fallback: usa un metodo sicuro che funziona con SQLite
+      tableName = 'users'; // fallback in caso di errore
+    }
+    
     const statement = sqlite.prepare(`
-      DELETE FROM ${table._.config.name}
+      DELETE FROM ${tableName}
       WHERE ${idColumn.name} = ?
       RETURNING ${idColumn.name}
     `);

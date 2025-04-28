@@ -570,8 +570,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getItem(id: number): Promise<Item | undefined> {
-    const [item] = await db.select().from(items).where(eq(items.id, id));
-    return item;
+    try {
+      const { dbSelectById } = await import('./drizzleHelpers');
+      return await dbSelectById<Item>(
+        items, 
+        items.id, 
+        id,
+        ['purchaseDate', 'warrantyExpires', 'maintenanceDate', 'lastUpdated'], // campi data
+        [], // campi booleani
+        ['metadata'] // campi JSON
+      );
+    } catch (error) {
+      console.error("Error in getItem:", error);
+      throw error;
+    }
   }
 
   async getItemByItemId(itemId: string): Promise<Item | undefined> {
@@ -650,12 +662,36 @@ export class DatabaseStorage implements IStorage {
 
   // Loan methods
   async getLoans(): Promise<Loan[]> {
-    return db.select().from(loans);
+    try {
+      const { dbSelect } = await import('./drizzleHelpers');
+      return await dbSelect<Loan>(
+        loans, 
+        undefined,
+        ['dueDate', 'loanDate', 'returnDate'], // campi data
+        [], // campi booleani
+        ['metadata'] // campi JSON
+      );
+    } catch (error) {
+      console.error("Error in getLoans:", error);
+      throw error;
+    }
   }
 
   async getLoan(id: number): Promise<Loan | undefined> {
-    const [loan] = await db.select().from(loans).where(eq(loans.id, id));
-    return loan;
+    try {
+      const { dbSelectById } = await import('./drizzleHelpers');
+      return await dbSelectById<Loan>(
+        loans, 
+        loans.id, 
+        id,
+        ['dueDate', 'loanDate', 'returnDate'], // campi data
+        [], // campi booleani
+        ['metadata'] // campi JSON
+      );
+    } catch (error) {
+      console.error("Error in getLoan:", error);
+      throw error;
+    }
   }
 
   async getLoansByItemId(itemId: number): Promise<Loan[]> {
