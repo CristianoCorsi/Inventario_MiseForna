@@ -132,22 +132,29 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: Error, user: Express.User, info: any) => {
-      if (err) {
-        return next(err);
-      }
-      if (!user) {
-        return res.status(401).json({ error: info.message || "Authentication failed" });
-      }
-      req.login(user, (err) => {
+    try {
+      passport.authenticate("local", (err: Error, user: Express.User, info: any) => {
         if (err) {
-          return next(err);
+          console.error("Login error:", err);
+          return res.status(500).json({ error: "Internal server error" });
         }
-        // Remove password from response
-        const { password: _, ...userWithoutPassword } = user;
-        return res.json(userWithoutPassword);
-      });
-    })(req, res, next);
+        if (!user) {
+          return res.status(401).json({ error: info?.message || "Authentication failed" });
+        }
+        req.login(user, (loginErr) => {
+          if (loginErr) {
+            console.error("Login session error:", loginErr);
+            return res.status(500).json({ error: "Error creating session" });
+          }
+          // Remove password from response
+          const { password: _, ...userWithoutPassword } = user;
+          return res.json(userWithoutPassword);
+        });
+      })(req, res, next);
+    } catch (error) {
+      console.error("Unhandled login error:", error);
+      res.status(500).json({ error: "Server error during authentication" });
+    }
   });
 
   app.post("/api/logout", (req, res) => {

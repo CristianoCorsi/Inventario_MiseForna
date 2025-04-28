@@ -20,6 +20,7 @@
   "app.clearSelection": "Cancella selezione",
   "app.generate": "Genera",
   "app.generating": "Generazione in corso...",
+  "app.optional": "Opzionale",
 
   "nav.dashboard": "Cruscotto",
   "nav.inventory": "Inventario",

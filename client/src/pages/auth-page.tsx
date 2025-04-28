@@ -12,6 +12,8 @@ import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { LoginData, RegisterData } from "@shared/schema";
+import Logo from "@/components/ui/logo";
+import { useTranslation } from "@/lib/i18n";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -34,6 +36,7 @@ export default function AuthPage() {
   const { toast } = useToast();
   const { user, loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("login");
+  const { t } = useTranslation();
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -90,16 +93,19 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="container flex h-screen items-center justify-center">
-      <div className="grid w-full gap-6 lg:grid-cols-2 lg:gap-12 xl:gap-16">
+    <div className="flex h-screen items-center justify-center p-4">
+      <div className="w-full max-w-5xl mx-auto grid gap-6 lg:grid-cols-2 lg:gap-12 xl:gap-16">
         {/* Auth forms */}
         <div className="flex flex-col justify-center space-y-6">
-          <div className="space-y-2 text-center">
+          <div className="space-y-4 text-center">
+            <div className="flex justify-center">
+              <Logo size="lg" />
+            </div>
             <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
               Misericordia di Fornacette
             </h1>
             <p className="mx-auto max-w-[600px] text-gray-500 md:text-xl dark:text-gray-400">
-              Inventory Management System
+              {t("app.name")}
             </p>
           </div>
 
@@ -109,17 +115,17 @@ export default function AuthPage() {
             className="w-full max-w-md mx-auto"
           >
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsTrigger value="login">{t("auth.login")}</TabsTrigger>
+              <TabsTrigger value="register">{t("auth.register")}</TabsTrigger>
             </TabsList>
             
             {/* Login Form */}
             <TabsContent value="login">
               <Card>
                 <CardHeader>
-                  <CardTitle>Login</CardTitle>
+                  <CardTitle>{t("auth.login")}</CardTitle>
                   <CardDescription>
-                    Enter your credentials to access the system
+                    {t("auth.welcomeText")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -130,9 +136,9 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>{t("auth.username")}</FormLabel>
                             <FormControl>
-                              <Input placeholder="username" {...field} />
+                              <Input placeholder={t("auth.username")} {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -143,7 +149,7 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <FormLabel>{t("auth.password")}</FormLabel>
                             <FormControl>
                               <Input type="password" placeholder="********" {...field} />
                             </FormControl>
@@ -156,19 +162,19 @@ export default function AuthPage() {
                         className="w-full" 
                         disabled={loginMutation.isPending}
                       >
-                        {loginMutation.isPending ? "Logging in..." : "Login"}
+                        {loginMutation.isPending ? t("app.loading") : t("auth.loginButton")}
                       </Button>
                     </form>
                   </Form>
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-4">
                   <div className="text-sm text-gray-500 text-center">
-                    Don't have an account?{" "}
+                    {t("auth.dontHaveAccount")}{" "}
                     <button
                       onClick={() => setActiveTab("register")}
                       className="text-blue-500 hover:underline"
                     >
-                      Register
+                      {t("auth.goToRegister")}
                     </button>
                   </div>
                 </CardFooter>
@@ -179,9 +185,9 @@ export default function AuthPage() {
             <TabsContent value="register">
               <Card>
                 <CardHeader>
-                  <CardTitle>Create an account</CardTitle>
+                  <CardTitle>{t("auth.register")}</CardTitle>
                   <CardDescription>
-                    Enter your information to create a new account
+                    {t("auth.registerText")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -192,9 +198,9 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>{t("auth.username")}</FormLabel>
                             <FormControl>
-                              <Input placeholder="username" {...field} />
+                              <Input placeholder={t("auth.username")} {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -205,7 +211,7 @@ export default function AuthPage() {
                         name="fullName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Full Name (Optional)</FormLabel>
+                            <FormLabel>{t("profile.name")} ({t("app.optional")})</FormLabel>
                             <FormControl>
                               <Input placeholder="John Doe" {...field} />
                             </FormControl>
@@ -218,7 +224,7 @@ export default function AuthPage() {
                         name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Email (Optional)</FormLabel>
+                            <FormLabel>{t("profile.email")} ({t("app.optional")})</FormLabel>
                             <FormControl>
                               <Input placeholder="email@example.com" {...field} />
                             </FormControl>
@@ -231,7 +237,7 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <FormLabel>{t("auth.password")}</FormLabel>
                             <FormControl>
                               <Input type="password" placeholder="********" {...field} />
                             </FormControl>
@@ -244,7 +250,7 @@ export default function AuthPage() {
                         name="confirmPassword"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Confirm Password</FormLabel>
+                            <FormLabel>{t("auth.confirmPassword")}</FormLabel>
                             <FormControl>
                               <Input type="password" placeholder="********" {...field} />
                             </FormControl>
@@ -257,19 +263,19 @@ export default function AuthPage() {
                         className="w-full" 
                         disabled={registerMutation.isPending}
                       >
-                        {registerMutation.isPending ? "Creating account..." : "Register"}
+                        {registerMutation.isPending ? t("app.loading") : t("auth.registerButton")}
                       </Button>
                     </form>
                   </Form>
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-4">
                   <div className="text-sm text-gray-500 text-center">
-                    Already have an account?{" "}
+                    {t("auth.alreadyHaveAccount")}{" "}
                     <button
                       onClick={() => setActiveTab("login")}
                       className="text-blue-500 hover:underline"
                     >
-                      Login
+                      {t("auth.goToLogin")}
                     </button>
                   </div>
                 </CardFooter>
@@ -282,10 +288,10 @@ export default function AuthPage() {
         <div className="hidden lg:flex flex-col justify-center space-y-4">
           <div className="space-y-2">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
-              Inventory Management System
+              {t("app.name")}
             </h2>
             <p className="text-gray-500 dark:text-gray-400">
-              A comprehensive system for managing inventory, loans, and tracking items for Misericordia di Fornacette.
+              {t("auth.welcomeTitle")}
             </p>
           </div>
           <ul className="grid gap-2 text-sm text-gray-500">
@@ -304,7 +310,7 @@ export default function AuthPage() {
                   d="M5 13l4 4L19 7"
                 ></path>
               </svg>
-              Track items with QR codes and barcodes
+              {t("inventory.generateQr")}
             </li>
             <li className="flex items-center">
               <svg
@@ -321,7 +327,7 @@ export default function AuthPage() {
                   d="M5 13l4 4L19 7"
                 ></path>
               </svg>
-              Manage loans and returns efficiently
+              {t("loans.create")}
             </li>
             <li className="flex items-center">
               <svg
@@ -338,7 +344,7 @@ export default function AuthPage() {
                   d="M5 13l4 4L19 7"
                 ></path>
               </svg>
-              Monitor inventory status and loan deadlines
+              {t("dashboard.overdueItems")}
             </li>
             <li className="flex items-center">
               <svg
@@ -355,7 +361,7 @@ export default function AuthPage() {
                   d="M5 13l4 4L19 7"
                 ></path>
               </svg>
-              Generate reports and manage donations
+              {t("reports.generate")}
             </li>
           </ul>
         </div>
