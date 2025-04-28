@@ -4,7 +4,8 @@ import React from "react";
 import itTranslations from "../locales/it.json";
 import enTranslations from "../locales/en.json";
 
-const FORCE_ITALIAN = true;
+// Usa import.meta.env invece di process.env in Vite
+const FORCE_ITALIAN = import.meta.env.VITE_FORCE_ITALIAN !== 'false';
 
 // Import translations from JSON files
 const it = itTranslations;

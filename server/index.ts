@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import dotenv from "dotenv";
+import { initializeDatabase } from "./db";
+
 // Carica le variabili dal file .env
 dotenv.config();
 
@@ -40,6 +42,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Inizializza il database prima di registrare le rotte
+  await initializeDatabase();
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

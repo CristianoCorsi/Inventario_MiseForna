@@ -1,92 +1,172 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar, unique } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import dotenv from 'dotenv';
+
+// Carica le variabili d'ambiente se non è già stato fatto
+if (!process.env.DB_TYPE) {
+  dotenv.config();
+}
+
+// Importa i tipi di tabelle per tutti i database supportati
+import {
+  sqliteTable, 
+  text as sqliteText, 
+  integer as sqliteInteger, 
+  blob as sqliteBlob,
+  primaryKey as sqlitePrimaryKey
+} from "drizzle-orm/sqlite-core";
+
+import {
+  pgTable,
+  text as pgText,
+  serial as pgSerial,
+  integer as pgInteger,
+  boolean as pgBoolean,
+  timestamp as pgTimestamp,
+  jsonb as pgJsonb,
+  varchar as pgVarchar,
+  unique as pgUnique
+} from "drizzle-orm/pg-core";
+
+import {
+  mysqlTable,
+  varchar as mysqlVarchar,
+  text as mysqlText,
+  int as mysqlInt,
+  serial as mysqlSerial,
+  boolean as mysqlBoolean,
+  timestamp as mysqlTimestamp,
+  json as mysqlJson,
+  primaryKey as mysqlPrimaryKey,
+  unique as mysqlUnique
+} from 'drizzle-orm/mysql-core';
+
+// Funzione per ottenere la data corrente compatibile con tutti i database
+const getNow = () => sql`CURRENT_TIMESTAMP`;
+
+// Determina il tipo di database dal file .env o usa SQLite come default
+const DB_TYPE = process.env.DB_TYPE || 'sqlite';
+console.log(`Schema inizializzato per database di tipo: ${DB_TYPE}`);
+
+// Seleziona il tipo di tabella e colonne in base al database
+let Table, TEXT, INTEGER, SERIAL, BOOLEAN, TIMESTAMP, JSON_TYPE, VARCHAR;
+
+if (DB_TYPE === 'sqlite') {
+  Table = sqliteTable;
+  TEXT = sqliteText;
+  INTEGER = sqliteInteger;
+  SERIAL = sqliteInteger; // SQLite non ha SERIAL, usa INTEGER con AUTOINCREMENT
+  BOOLEAN = (name) => sqliteInteger(name, { mode: 'boolean' });
+  TIMESTAMP = sqliteText; // SQLite memorizza le date come TEXT
+  JSON_TYPE = sqliteText; // SQLite memorizza JSON come TEXT
+  VARCHAR = sqliteText; // SQLite non distingue tra TEXT e VARCHAR
+} else if (DB_TYPE === 'mysql' || DB_TYPE === 'mssql') {
+  Table = mysqlTable;
+  TEXT = mysqlText;
+  INTEGER = mysqlInt;
+  SERIAL = mysqlSerial;
+  BOOLEAN = mysqlBoolean;
+  TIMESTAMP = mysqlTimestamp;
+  JSON_TYPE = mysqlJson;
+  VARCHAR = mysqlVarchar;
+} else {
+  // PostgreSQL è il default per gli altri casi
+  Table = pgTable;
+  TEXT = pgText;
+  INTEGER = pgInteger;
+  SERIAL = pgSerial;
+  BOOLEAN = pgBoolean;
+  TIMESTAMP = pgTimestamp;
+  JSON_TYPE = pgJsonb;
+  VARCHAR = pgVarchar;
+}
 
 // Main inventory items table
-export const items = pgTable("items", {
-  id: serial("id").primaryKey(),
-  itemId: text("item_id").notNull().unique(), // Custom item ID (e.g., TOOL-1234)
-  name: text("name").notNull(),
-  description: text("description"),
-  location: text("location"),
-  photoUrl: text("photo_url"),
-  origin: text("origin").default("purchased"), // purchased, donated, other
-  donorName: text("donor_name"),
-  dateAdded: timestamp("date_added").defaultNow(),
-  qrCode: text("qr_code"),
-  barcode: text("barcode"),
-  status: text("status").default("available"), // available, loaned, maintenance
+export const items = Table("items", {
+  id: SERIAL("id").primaryKey(),
+  itemId: TEXT("item_id").notNull().unique(), // Custom item ID (e.g., TOOL-1234)
+  name: TEXT("name").notNull(),
+  description: TEXT("description"),
+  location: TEXT("location"),
+  photoUrl: TEXT("photo_url"),
+  origin: TEXT("origin").default("purchased"), // purchased, donated, other
+  donorName: TEXT("donor_name"),
+  dateAdded: TIMESTAMP("date_added").default(getNow),
+  qrCode: TEXT("qr_code"),
+  barcode: TEXT("barcode"),
+  status: TEXT("status").default("available"), // available, loaned, maintenance
 });
 
 // Storage locations table
-export const locations = pgTable("locations", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
-  description: text("description"),
+export const locations = Table("locations", {
+  id: SERIAL("id").primaryKey(),
+  name: TEXT("name").notNull().unique(),
+  description: TEXT("description"),
 });
 
 // Loans tracking table
-export const loans = pgTable("loans", {
-  id: serial("id").primaryKey(),
-  itemId: integer("item_id").notNull(), // References items.id
-  borrowerName: text("borrower_name").notNull(),
-  borrowerEmail: text("borrower_email"),
-  borrowerPhone: text("borrower_phone"),
-  loanDate: timestamp("loan_date").defaultNow(),
-  dueDate: timestamp("due_date").notNull(),
-  returnDate: timestamp("return_date"),
-  notes: text("notes"),
-  status: text("status").default("active"), // active, returned, overdue
+export const loans = Table("loans", {
+  id: SERIAL("id").primaryKey(),
+  itemId: INTEGER("item_id").notNull(), // References items.id
+  borrowerName: TEXT("borrower_name").notNull(),
+  borrowerEmail: TEXT("borrower_email"),
+  borrowerPhone: TEXT("borrower_phone"),
+  loanDate: TIMESTAMP("loan_date").default(getNow),
+  dueDate: TIMESTAMP("due_date").notNull(),
+  returnDate: TIMESTAMP("return_date"),
+  notes: TEXT("notes"),
+  status: TEXT("status").default("active"), // active, returned, overdue
 });
 
 // Activity log table
-export const activities = pgTable("activities", {
-  id: serial("id").primaryKey(),
-  itemId: integer("item_id"), // References items.id
-  activityType: text("activity_type").notNull(), // new, loan, return, edit, delete
-  description: text("description").notNull(),
-  timestamp: timestamp("timestamp").defaultNow(),
-  metadata: jsonb("metadata"),
+export const activities = Table("activities", {
+  id: SERIAL("id").primaryKey(),
+  itemId: INTEGER("item_id"), // References items.id
+  activityType: TEXT("activity_type").notNull(), // new, loan, return, edit, delete
+  description: TEXT("description").notNull(),
+  timestamp: TIMESTAMP("timestamp").default(getNow),
+  metadata: JSON_TYPE("metadata"),
 });
 
 // Settings table
-export const settings = pgTable("settings", {
-  id: serial("id").primaryKey(),
-  key: text("key").notNull().unique(),
-  value: text("value"),
+export const settings = Table("settings", {
+  id: SERIAL("id").primaryKey(),
+  key: TEXT("key").notNull().unique(),
+  value: TEXT("value"),
 });
 
 // Unassigned QR codes table
-export const qrCodes = pgTable("qr_codes", {
-  id: serial("id").primaryKey(),
-  qrCodeId: text("qr_code_id").notNull().unique(), // The generated unique ID
-  description: text("description"),
-  dateGenerated: timestamp("date_generated").defaultNow(),
-  isAssigned: boolean("is_assigned").default(false),
-  assignedToItemId: integer("assigned_to_item_id"), // References items.id when assigned
-  dateAssigned: timestamp("date_assigned"),
+export const qrCodes = Table("qr_codes", {
+  id: SERIAL("id").primaryKey(),
+  qrCodeId: TEXT("qr_code_id").notNull().unique(), // The generated unique ID
+  description: TEXT("description"),
+  dateGenerated: TIMESTAMP("date_generated").default(getNow),
+  isAssigned: BOOLEAN("is_assigned").default(false),
+  assignedToItemId: INTEGER("assigned_to_item_id"), // References items.id when assigned
+  dateAssigned: TIMESTAMP("date_assigned"),
 });
 
 // Users for authentication
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: varchar("username", { length: 100 }).notNull().unique(),
-  password: text("password").notNull(),
-  email: varchar("email", { length: 255 }),
-  fullName: varchar("full_name", { length: 255 }),
-  role: text("role").default("staff").notNull(), // admin, staff, viewer
-  isActive: boolean("is_active").default(true),
-  lastLogin: timestamp("last_login"),
-  createdAt: timestamp("created_at").defaultNow(),
-  profilePicture: text("profile_picture"),
-  preferences: jsonb("preferences").default({})
+export const users = Table("users", {
+  id: SERIAL("id").primaryKey(),
+  username: VARCHAR("username", { length: 100 }).notNull().unique(),
+  password: TEXT("password").notNull(),
+  email: VARCHAR("email", { length: 255 }),
+  fullName: VARCHAR("full_name", { length: 255 }),
+  role: TEXT("role").default("staff").notNull(), // admin, staff, viewer
+  isActive: BOOLEAN("is_active").default(true),
+  lastLogin: TIMESTAMP("last_login"),
+  createdAt: TIMESTAMP("created_at").default(getNow),
+  profilePicture: TEXT("profile_picture"),
+  preferences: JSON_TYPE("preferences"),
 });
 
-// User sessions for authentication - for connect-pg-simple
-export const sessions = pgTable("sessions", {
-  sid: text("sid").primaryKey(),
-  sess: jsonb("sess").notNull(),
-  expire: timestamp("expire", { mode: "date" }).notNull(),
+// User sessions for authentication
+export const sessions = Table("sessions", {
+  sid: TEXT("sid").primaryKey(),
+  sess: JSON_TYPE("sess").notNull(),
+  expire: TIMESTAMP("expire").notNull(),
 });
 
 // Insert schemas

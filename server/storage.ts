@@ -10,14 +10,12 @@ import {
   items, locations, loans, activities, settings, qrCodes,
   users, sessions
 } from "@shared/schema";
-import { db } from './db';
+import { db, sqlite } from './db';
 import { eq, and, or, isNull, desc, asc, lt } from 'drizzle-orm';
 
 import session from "express-session";
 
 export interface IStorage {
-  // Session store for authentication
-  sessionStore: session.Store;
   
   // Items
   getItems(): Promise<Item[]>;
@@ -611,14 +609,15 @@ export class DatabaseStorage implements IStorage {
       query = query.limit(limit);
     }
     
-    return query;
+    return await query.all();
   }
   
   async getActivitiesByItemId(itemId: number): Promise<Activity[]> {
-    return db.select()
+    return await db.select()
       .from(activities)
       .where(eq(activities.itemId, itemId))
-      .orderBy(desc(activities.timestamp));
+      .orderBy(desc(activities.timestamp))
+      .all();
   }
   
   async createActivity(activity: InsertActivity): Promise<Activity> {
@@ -656,7 +655,7 @@ export class DatabaseStorage implements IStorage {
   
   // QR Code methods
   async getQrCodes(): Promise<QrCode[]> {
-    return db.select().from(qrCodes);
+    return await db.select().from(qrCodes).all();
   }
   
   async getQrCode(id: number): Promise<QrCode | undefined> {
@@ -685,7 +684,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUnassignedQrCodes(): Promise<QrCode[]> {
-    return db.select().from(qrCodes).where(eq(qrCodes.isAssigned, false));
+    return await db.select().from(qrCodes).where(eq(qrCodes.isAssigned, false)).all();
   }
   
   async associateQrCodeWithItem(qrCodeId: string, itemId: number): Promise<QrCode | undefined> {
@@ -724,7 +723,7 @@ export class DatabaseStorage implements IStorage {
   
   // User management methods
   async getUsers(): Promise<User[]> {
-    return db.select().from(users);
+    return await db.select().from(users).all();
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -744,11 +743,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const [newUser] = await db
-      .insert(users)
-      .values(user)
-      .returning();
-    return newUser;
+    // Debug dell'oggetto user prima di salvarlo
+    console.log('Creating user with data:', JSON.stringify(user));
+    
+    // SQLite richiede conversioni specifiche per i tipi di dati
+    try {
+      // Inserimento con metodo raw SQL per evitare problemi di binding
+      const result = sqlite.prepare(`
+        INSERT INTO users (
+          username, password, email, full_name, role, is_active, preferences
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        user.username,
+        user.password,
+        user.email || null,
+        user.fullName || null,
+        user.role || 'staff',
+        user.isActive === true ? 1 : 0,
+        user.preferences || null
+      );
+      
+      // Recupera l'utente appena creato
+      const id = result.lastInsertRowid;
+      console.log('User created with ID:', id);
+      const newUser = await this.getUser(Number(id));
+      
+      return newUser!;
+    } catch (error) {
+      console.error('Error in createUser:', error);
+      throw error;
+    }
   }
 
   async updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined> {

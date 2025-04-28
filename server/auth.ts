@@ -2,11 +2,10 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
-import connectPg from "connect-pg-simple";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { pool } from "./db";
+import { sessionStore } from "./db";
 import { User as SelectUser } from "@shared/schema";
 
 declare global {
@@ -38,7 +37,7 @@ export function setupAuth(app: Express) {
     secret: process.env.SESSION_SECRET || 'inventory-management-secret',
     resave: false,
     saveUninitialized: false,
-    store: storage.sessionStore,
+    store: sessionStore,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 1 day
       secure: process.env.NODE_ENV === 'production',
@@ -103,7 +102,7 @@ export function setupAuth(app: Express) {
       // Hash password
       const hashedPassword = await hashPassword(password);
       
-      // Create user
+      // Create user - Convertire l'oggetto preferences in stringa JSON per SQLite
       const user = await storage.createUser({
         username,
         password: hashedPassword,
@@ -111,7 +110,7 @@ export function setupAuth(app: Express) {
         fullName,
         role,
         isActive: true,
-        preferences: {}
+        preferences: JSON.stringify({})
       });
       
       // Remove password from response
@@ -175,7 +174,8 @@ export function setupAuth(app: Express) {
       const updatedUser = await storage.updateUser(user.id, {
         fullName,
         email,
-        preferences
+        // Convertire preferences in stringa JSON se presente
+        preferences: preferences ? JSON.stringify(preferences) : undefined
       });
       
       if (!updatedUser) {
@@ -250,7 +250,7 @@ export function setupAuth(app: Express) {
       // Hash password
       const hashedPassword = await hashPassword(password);
       
-      // Create user
+      // Create user - Convertire l'oggetto preferences in stringa JSON per SQLite
       const user = await storage.createUser({
         username,
         password: hashedPassword,
@@ -258,7 +258,7 @@ export function setupAuth(app: Express) {
         fullName,
         role,
         isActive: true,
-        preferences: {}
+        preferences: JSON.stringify({})
       });
       
       // Remove password from response
@@ -363,14 +363,17 @@ async function createDefaultAdminUser() {
     if (users.length === 0) {
       const hashedPassword = await hashPassword("admin");
       
-      await storage.createUser({
+      // Convertire l'oggetto preferences in stringa JSON per SQLite
+      const userToCreate = {
         username: "admin",
         password: hashedPassword,
         fullName: "Administrator",
         role: "admin",
         isActive: true,
-        preferences: {}
-      });
+        preferences: JSON.stringify({})
+      };
+      
+      await storage.createUser(userToCreate);
       
       console.log("Created default admin user: admin/admin");
     }

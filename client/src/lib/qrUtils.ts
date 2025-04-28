@@ -21,7 +21,7 @@ export function generateId(prefix: string = "ITEM-"): string {
 export function generateQRCodeUrl(itemId: string): string {
   // In a real app, we would use the actual domain here
   // When running locally, we can use the Replit domains environment variable
-  const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || window.location.origin;
+  const domain = import.meta.env.VITE_REPLIT_DOMAINS?.split(',')[0] || window.location.origin;
   
   return `${domain}/scan?id=${encodeURIComponent(itemId)}`;
 }
