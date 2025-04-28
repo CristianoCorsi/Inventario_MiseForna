@@ -103,7 +103,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create item" });
+      console.error("Error creating item:", error);
+      res.status(500).json({ message: "Failed to create item", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -483,6 +484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/qrcodes', async (req, res) => {
     try {
       const validatedData = qrCodeFormSchema.parse(req.body);
+      console.log("Creating QR code with data:", validatedData);
       
       // Generate QR code image
       const qrDataUrl = await QRCode.toDataURL(validatedData.qrCodeId);
@@ -497,13 +499,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create QR code" });
+      console.error("Error creating QR code:", error);
+      res.status(500).json({ message: "Failed to create QR code", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
   app.post('/api/qrcodes/batch', async (req, res) => {
     try {
       const { prefix, quantity, description } = req.body;
+      console.log("Creating batch QR codes:", { prefix, quantity, description });
       
       if (!prefix || typeof prefix !== 'string') {
         return res.status(400).json({ message: "Prefix is required" });
@@ -531,15 +535,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         results.push(newQrCode);
       }
       
+      console.log(`Generated ${results.length} QR codes`);
       res.status(201).json(results);
     } catch (error) {
-      res.status(500).json({ message: "Failed to create batch QR codes" });
+      console.error("Error creating batch QR codes:", error);
+      res.status(500).json({ message: "Failed to create batch QR codes", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
   app.post('/api/qrcodes/associate', async (req, res) => {
     try {
       const { qrCodeId, itemId } = req.body;
+      console.log("Associating QR code:", { qrCodeId, itemId });
       
       if (!qrCodeId || typeof qrCodeId !== 'string') {
         return res.status(400).json({ message: "QR code ID is required" });
@@ -567,10 +574,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedQrCode = await storage.associateQrCodeWithItem(qrCodeId, itemId);
+      console.log("QR code successfully associated with item");
       
       res.json(updatedQrCode);
     } catch (error) {
-      res.status(500).json({ message: "Failed to associate QR code with item" });
+      console.error("Error associating QR code with item:", error);
+      res.status(500).json({ message: "Failed to associate QR code with item", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
