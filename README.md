@@ -1,12 +1,13 @@
 
-# Sistema di Gestione Inventario
+# Sistema di Gestione Inventario - Misericordia di Fornacette
 
-Un'applicazione web per la gestione dell'inventario con supporto per codici QR, prestiti e reporting.
+Un'applicazione web per la gestione dell'inventario con supporto per codici QR, prestiti e reporting, sviluppata specificamente per le esigenze della Misericordia di Fornacette.
 
 ## Requisiti
 
-- Node.js 20.x
-- SQLite 3.x
+- Node.js 20.x o superiore
+- SQLite 3.x (incluso come dipendenza, non richiede installazione separata)
+- Sistemi operativi supportati: Windows, macOS, Linux
 
 ## Configurazione Ambiente di Sviluppo (Locale)
 
@@ -22,24 +23,36 @@ Un'applicazione web per la gestione dell'inventario con supporto per codici QR, 
    ```
 
 3. **Configura le variabili d'ambiente**:
-   Crea un file `.env` nella root del progetto e imposta le seguenti variabili:
+   Copia il file `.env.example` in un nuovo file `.env`:
+   
+   Per Windows:
+   ```cmd
+   copy .env.example .env
    ```
-   DATABASE_URL=sqlite:./dev.db
-   SESSION_SECRET=your_secret_key_here
-   NODE_ENV=development
-   ```
-
-4. **Inizializza il database**:
+   
+   Per macOS/Linux:
    ```bash
-   npm run db:push
+   cp .env.example .env
    ```
+   
+   Il file `.env` contiene già le configurazioni predefinite per utilizzare SQLite.
 
-5. **Avvia l'applicazione in modalità sviluppo**:
+4. **Avvia l'applicazione in modalità sviluppo**:
+   
+   Per Windows:
+   ```cmd
+   .\dev-win.bat
+   ```
+   
+   Per macOS/Linux:
    ```bash
-   npm run dev
+   # Rendi lo script eseguibile
+   chmod +x ./dev.sh
+   # Esegui lo script
+   ./dev.sh
    ```
 
-   L'applicazione sarà disponibile all'indirizzo `http://0.0.0.0:5000`.
+   L'applicazione sarà disponibile all'indirizzo `http://localhost:5000`.
 
 ## Struttura del Progetto
 
@@ -58,17 +71,20 @@ Un'applicazione web per la gestione dell'inventario con supporto per codici QR, 
 
 ## Deployment in Produzione
 
+### Compilazione e Avvio Standard
+
 1. **Compila l'applicazione**:
    ```bash
    npm run build
    ```
 
 2. **Configura le variabili d'ambiente per produzione**:
-   Crea un file `.env` nella root del progetto e imposta le seguenti variabili:
+   Crea un file `.env` nella root del progetto utilizzando il file `.env.example` come base:
    ```
-   DATABASE_URL=sqlite:./prod.db
+   DB_TYPE=sqlite
    SESSION_SECRET=your_secure_production_secret
    NODE_ENV=production
+   COOKIE_SECURE=true  # Se usi HTTPS
    ```
 
 3. **Avvia il server di produzione**:
@@ -77,6 +93,32 @@ Un'applicazione web per la gestione dell'inventario con supporto per codici QR, 
    ```
 
    Il server sarà disponibile su `http://0.0.0.0:5000`.
+
+### Script di Avvio per SQLite in Produzione
+
+Per semplificare l'avvio con SQLite in produzione, è stato creato uno script dedicato:
+
+**Windows**:
+1. Crea un file `start-with-sqlite-win.bat` contenente:
+   ```cmd
+   @echo off
+   set NODE_ENV=production
+   set DB_TYPE=sqlite
+   set SESSION_SECRET=your-secure-production-secret
+   node dist/index.js
+   ```
+
+2. Esegui lo script:
+   ```cmd
+   .\start-with-sqlite-win.bat
+   ```
+
+**Linux/macOS**:
+1. Utilizza lo script `start-with-sqlite.sh` già incluso:
+   ```bash
+   chmod +x ./start-with-sqlite.sh
+   ./start-with-sqlite.sh
+   ```
 
 ## Note per la Produzione
 
@@ -99,6 +141,38 @@ Si consiglia di configurare backup periodici del file del database SQLite:
 - Monitoraggio attività attraverso il pannello admin
 - Log degli accessi e delle operazioni
 
+## Risoluzione dei problemi comuni
+
+### Errori in ambiente Windows
+
+1. **Errore "NODE_ENV=development non è riconosciuto come comando" quando si esegue npm run dev**:
+   Utilizzare lo script batch `dev-win.bat` creato appositamente per Windows:
+   ```cmd
+   .\dev-win.bat
+   ```
+
+2. **Errore "DATABASE_URL must be set"**:
+   Assicurarsi di avere un file `.env` corretto nella root del progetto. Copiare il file `.env.example` e rinominarlo in `.env`:
+   ```cmd
+   copy .env.example .env
+   ```
+
+3. **Errori di login o registrazione utente**:
+   - Verificare che sia impostata la variabile `SESSION_SECRET` nel file `.env`
+   - Controllare che l'applicazione stia usando il database SQLite (`DB_TYPE=sqlite` nel file `.env`)
+   - Se necessario, eliminare il database esistente e lasciare che l'applicazione ne crei uno nuovo all'avvio
+
+4. **Errore di accesso alla pagina Admin**:
+   - Assicurarsi di aver effettuato l'accesso con un account avente ruolo "admin"
+   - L'utente predefinito è "admin" con password "admin"
+
+### Errori in ambiente Linux/macOS
+
+Se gli script `.sh` non sono eseguibili, concedere i permessi di esecuzione:
+```bash
+chmod +x ./dev.sh ./start-with-sqlite.sh
+```
+
 ## Supporto
 
-Per assistenza, aprire una issue nel repository.
+Per assistenza tecnica, aprire una issue nel repository o contattare il team di sviluppo.
