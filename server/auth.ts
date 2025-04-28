@@ -38,14 +38,7 @@ export function setupAuth(app: Express) {
   const sessionStore = new PostgresSessionStore({
     pool,
     tableName: 'sessions',
-    createTableIfMissing: true,
-    // Define the schema for the session table
-    schemaName: 'public', 
-    columnNames: {
-      session_id: 'sid',
-      session_data: 'sess',
-      expire: 'expire'
-    }
+    createTableIfMissing: true
   });
 
   // Session configuration

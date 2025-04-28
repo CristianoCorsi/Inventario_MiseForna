@@ -82,13 +82,11 @@ export const users = pgTable("users", {
   preferences: jsonb("preferences").default({})
 });
 
-// User sessions for authentication
+// User sessions for authentication - for connect-pg-simple
 export const sessions = pgTable("sessions", {
-  id: varchar("id", { length: 255 }).primaryKey(),
-  userId: integer("user_id").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  data: jsonb("data").default({}),
+  sid: text("sid").primaryKey(),
+  sess: jsonb("sess").notNull(),
+  expire: timestamp("expire", { mode: "date" }).notNull(),
 });
 
 // Insert schemas
