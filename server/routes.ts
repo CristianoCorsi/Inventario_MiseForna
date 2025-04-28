@@ -199,6 +199,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(locations);
   });
   
+  app.get('/api/locations/:id', async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+    
+    const location = await storage.getLocation(id);
+    if (!location) {
+      return res.status(404).json({ message: "Location not found" });
+    }
+    
+    res.json(location);
+  });
+  
   app.post('/api/locations', async (req, res) => {
     try {
       const validatedData = insertLocationSchema.parse(req.body);
@@ -209,6 +223,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create location" });
+    }
+  });
+  
+  app.put('/api/locations/:id', async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+    
+    try {
+      const validatedData = insertLocationSchema.partial().parse(req.body);
+      const updatedLocation = await storage.updateLocation(id, validatedData);
+      
+      if (!updatedLocation) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+      
+      res.json(updatedLocation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update location" });
+    }
+  });
+  
+  app.delete('/api/locations/:id', async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+    
+    try {
+      // Verifica se ci sono oggetti che usano questa location
+      const items = await storage.getItems();
+      const location = await storage.getLocation(id);
+      const locationInUse = items.some(item => 
+        item.location === (location?.name || "")
+      );
+      
+      if (locationInUse) {
+        return res.status(400).json({ 
+          message: "Cannot delete location that is used by items"
+        });
+      }
+      
+      const success = await storage.deleteLocation(id);
+      if (!success) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete location" });
     }
   });
   

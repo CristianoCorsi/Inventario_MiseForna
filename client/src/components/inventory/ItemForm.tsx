@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { itemFormSchema, Item } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/lib/i18n";
+import { LocationAutoComplete } from "./LocationAutoComplete";
 
 import {
   Form,
