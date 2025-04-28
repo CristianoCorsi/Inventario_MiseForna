@@ -57,7 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post('/api/items', isAuthenticated, async (req, res) => {
     try {
-      const validatedData = itemFormSchema.parse(req.body);
+      const validatedData = insertItemSchema.parse(req.body);
       
       // Generate QR Code as base64 string
       let qrCode = "";
@@ -114,7 +114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const validatedData = itemFormSchema.partial().parse(req.body);
+      const validatedData = insertItemSchema.partial().parse(req.body);
       
       // Update QR code if itemId changed
       if (validatedData.itemId) {

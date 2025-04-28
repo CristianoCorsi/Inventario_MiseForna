@@ -5,7 +5,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { itemFormSchema, InsertItem } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/lib/i18n";
 import { generateId } from "@/lib/qrUtils";
+import { LocationAutoComplete } from "./LocationAutoComplete";
 
 import {
   Dialog,
@@ -46,10 +48,7 @@ export default function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isImageUploading, setIsImageUploading] = useState(false);
-  
-  const { data: locations } = useQuery({
-    queryKey: ["/api/locations"],
-  });
+  const { t } = useTranslation();
   
   // Get QR code settings
   const { data: prefixSetting } = useQuery({
@@ -206,21 +205,20 @@ export default function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Storage Location</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a location" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {locations?.map((location) => (
-                        <SelectItem key={location.id} value={location.name}>
-                          {location.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Storage Location</FormLabel>
+                    <span className="text-xs text-muted-foreground">
+                      {t("app.optional")}
+                    </span>
+                  </div>
+                  <FormControl>
+                    <LocationAutoComplete
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder={t("locations.select")}
+                      isRequired={false}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
