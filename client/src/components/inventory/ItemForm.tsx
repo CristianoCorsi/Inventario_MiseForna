@@ -39,6 +39,7 @@ interface ItemFormProps {
 export function ItemForm({ item, onSuccess, onCancel }: ItemFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   
   const { data: locations } = useQuery({
     queryKey: ["/api/locations"],
@@ -150,20 +151,17 @@ export function ItemForm({ item, onSuccess, onCancel }: ItemFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Storage Location</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a location" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {locations?.map((location) => (
-                          <SelectItem key={location.id} value={location.name}>
-                            {location.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <LocationAutoComplete 
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder={t("locations.select")}
+                        isRequired={false}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      {t("app.optional")}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

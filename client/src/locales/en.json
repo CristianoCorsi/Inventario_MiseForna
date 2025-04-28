@@ -20,6 +20,21 @@
   "app.clearSelection": "Clear selection",
   "app.generate": "Generate",
   "app.generating": "Generating...",
+  "app.optional": "Optional",
+  
+  "locations.createNew": "Create new location",
+  "locations.createdSuccess": "Location created successfully",
+  "locations.creationError": "Error creating location",
+  "locations.deletedSuccess": "Location deleted successfully",
+  "locations.deletionError": "Error deleting location",
+  "locations.select": "Select location",
+  
+  "notifications.success": "Success",
+  "notifications.error": "Error",
+  "notifications.warning": "Warning",
+  "notifications.info": "Information",
+  
+  "confirmations.delete": "Are you sure you want to delete this item?",
 
   "nav.dashboard": "Dashboard",
   "nav.inventory": "Inventory",

@@ -224,7 +224,7 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 // Extended schemas for forms
 export const itemFormSchema = insertItemSchema.extend({
-  location: z.string().min(1, "Location is required"),
+  location: z.string().optional().or(z.literal("")),
   name: z.string().min(2, "Name must be at least 2 characters"),
   itemId: z.string().min(3, "Item ID must be at least 3 characters"),
 });

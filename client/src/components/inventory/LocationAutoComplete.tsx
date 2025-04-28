@@ -7,7 +7,7 @@ import { PlusIcon, X } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Spinner } from "@/components/ui/spinner";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Location } from "@shared/schema";
 
@@ -164,7 +164,7 @@ export function LocationAutoComplete({
           />
           {isLoadingLocations ? (
             <div className="flex items-center justify-center py-6">
-              <Spinner size="sm" />
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
             </div>
           ) : (
             <CommandList>
