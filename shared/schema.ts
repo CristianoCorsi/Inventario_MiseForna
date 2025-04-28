@@ -1,11 +1,22 @@
 import { relations, sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import dotenv from 'dotenv';
 
-// Carica le variabili d'ambiente se non è già stato fatto
-if (!process.env.DB_TYPE) {
-  dotenv.config();
+// Solo il server deve caricare dotenv, il frontend gestisce le variabili d'ambiente in modo diverso
+// Verifichiamo se siamo in un ambiente browser o server
+const isServer = typeof window === 'undefined';
+
+// Carica dotenv solo sul server
+if (isServer) {
+  // Import dinamico per evitare problemi nel browser
+  import('dotenv').then(dotenv => {
+    // Carica le variabili d'ambiente se non è già stato fatto
+    if (typeof process !== 'undefined' && !process.env.DB_TYPE) {
+      dotenv.config();
+    }
+  }).catch(err => {
+    console.error('Errore durante il caricamento di dotenv:', err);
+  });
 }
 
 // Importa i tipi di tabelle per tutti i database supportati
@@ -46,8 +57,17 @@ import {
 const getNow = () => sql`CURRENT_TIMESTAMP`;
 
 // Determina il tipo di database dal file .env o usa SQLite come default
-const DB_TYPE = process.env.DB_TYPE || 'sqlite';
-console.log(`Schema inizializzato per database di tipo: ${DB_TYPE}`);
+// Utilizziamo un approccio condizionale per gestire sia l'ambiente server che quello client
+const DB_TYPE = isServer ? 
+  // Sul server, possiamo accedere a process.env
+  (typeof process !== 'undefined' && process.env.DB_TYPE ? process.env.DB_TYPE : 'sqlite') : 
+  // Sul client, usiamo sempre SQLite
+  'sqlite';
+
+// Log solo sul server
+if (isServer) {
+  console.log(`Schema inizializzato per database di tipo: ${DB_TYPE}`);
+}
 
 // Seleziona il tipo di tabella e colonne in base al database
 let Table, TEXT, INTEGER, SERIAL, BOOLEAN, TIMESTAMP, JSON_TYPE, VARCHAR;
