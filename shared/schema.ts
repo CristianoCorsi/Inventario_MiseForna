@@ -185,8 +185,8 @@ export const users = Table("users", {
 // User sessions for authentication
 export const sessions = Table("sessions", {
   sid: TEXT("sid").primaryKey(),
-  sess: JSON_TYPE("sess").notNull(),
-  expire: TIMESTAMP("expire").notNull(),
+  sess: TEXT("sess").notNull(), // Store as TEXT for SQLite compatibility
+  expire: INTEGER("expire").notNull(), // Store as INTEGER (timestamp) for SQLite compatibility
 });
 
 // Insert schemas

@@ -39,6 +39,9 @@ export const db = drizzle(sqlite, { schema });
 // Funzione per inizializzare le tabelle se non esistono
 export async function initializeDatabase() {
   try {
+    // Elimina la tabella delle sessioni se esiste per evitare problemi di compatibilità
+    sqlite.exec("DROP TABLE IF EXISTS sessions;");
+    
     // Verifica se le tabelle esistono
     const tablesExist = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").all().length > 0;
     
@@ -123,7 +126,7 @@ export async function initializeDatabase() {
         CREATE TABLE IF NOT EXISTS sessions (
           sid TEXT PRIMARY KEY,
           sess TEXT NOT NULL,
-          expire TEXT NOT NULL
+          expire INTEGER NOT NULL
         );
       `);
       
@@ -137,14 +140,13 @@ export async function initializeDatabase() {
   }
 }
 
-// Crea lo store di sessione per autenticazione
-const SQLiteStore = SqliteStore(session);
-export const sessionStore = new SQLiteStore({
-  client: sqlite,
-  expired: {
-    clear: true,
-    intervalMs: 24 * 60 * 60 * 1000 // Cancella sessioni scadute ogni 24 ore
-  }
+// Usa memorystore per le sessioni (più affidabile con SQLite)
+import createMemoryStore from "memorystore";
+const MemoryStore = createMemoryStore(session);
+
+// Usa lo store in memoria per le sessioni per evitare problemi di binding con SQLite
+export const sessionStore = new MemoryStore({
+  checkPeriod: 24 * 60 * 60 * 1000 // Cancella sessioni scadute ogni 24 ore
 });
 
 // Configura pool di connessione per PostgreSQL (usato solo se PostgreSQL è attivo)
