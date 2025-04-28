@@ -2,11 +2,7 @@
  * Utility per la gestione dei tipi di dati con diversi database
  * Fornisce funzioni per convertire i tipi di dati tra l'applicazione e il database
  */
-
-import { getDatabaseConfig } from './db-config';
-
-// Ottieni il tipo di database
-const DB_TYPE = getDatabaseConfig().type || 'sqlite';
+import { config } from "./config";
 
 /**
  * Converte un valore Date in un formato adatto al tipo di database
@@ -14,14 +10,16 @@ const DB_TYPE = getDatabaseConfig().type || 'sqlite';
  * @returns Il valore convertito nel formato appropriato per il database
  */
 export function dateToDb(value: Date | null | undefined): string | Date | null {
-  if (value === null || value === undefined) return null;
-  
-  // SQLite utilizza stringhe ISO per le date
-  if (DB_TYPE === 'sqlite') {
-    return value instanceof Date ? value.toISOString() : value;
+  if (value === null || value === undefined) {
+    return null;
   }
   
-  // Altri database possono usare direttamente l'oggetto Date
+  // Per SQLite, converte in ISO string
+  if (config.database.type === 'sqlite') {
+    return value.toISOString();
+  }
+  
+  // Per altri database, usa il tipo Date nativo
   return value;
 }
 
@@ -31,18 +29,22 @@ export function dateToDb(value: Date | null | undefined): string | Date | null {
  * @returns Un oggetto Date
  */
 export function dbToDate(value: string | Date | null | undefined): Date | null {
-  if (value === null || value === undefined) return null;
-  
-  // Se è già un oggetto Date, return direttamente
-  if (value instanceof Date) return value;
-  
-  // Per SQLite, converte la stringa ISO in Date
-  if (typeof value === 'string') {
-    const parsedDate = new Date(value);
-    return isNaN(parsedDate.getTime()) ? null : parsedDate;
+  if (value === null || value === undefined) {
+    return null;
   }
   
-  return null;
+  // Se è già un oggetto Date, lo restituisce
+  if (value instanceof Date) {
+    return value;
+  }
+  
+  // Altrimenti converte da stringa a Date
+  try {
+    return new Date(value);
+  } catch (error) {
+    console.error("Errore nella conversione della data:", error);
+    return null;
+  }
 }
 
 /**
@@ -51,14 +53,16 @@ export function dbToDate(value: string | Date | null | undefined): Date | null {
  * @returns Il valore convertito nel formato appropriato per il database
  */
 export function booleanToDb(value: boolean | null | undefined): number | boolean | null {
-  if (value === null || value === undefined) return null;
+  if (value === null || value === undefined) {
+    return null;
+  }
   
-  // SQLite utilizza 0/1 per i booleani
-  if (DB_TYPE === 'sqlite') {
+  // Per SQLite, converte in 0/1
+  if (config.database.type === 'sqlite') {
     return value ? 1 : 0;
   }
   
-  // Altri database possono usare direttamente i booleani
+  // Per altri database, usa il tipo booleano nativo
   return value;
 }
 
@@ -68,17 +72,17 @@ export function booleanToDb(value: boolean | null | undefined): number | boolean
  * @returns Un valore booleano
  */
 export function dbToBoolean(value: number | boolean | null | undefined): boolean | null {
-  if (value === null || value === undefined) return null;
-  
-  // Se è già un booleano, return direttamente
-  if (typeof value === 'boolean') return value;
-  
-  // Per SQLite, converte 0/1 in booleano
-  if (typeof value === 'number') {
-    return value !== 0;
+  if (value === null || value === undefined) {
+    return null;
   }
   
-  return null;
+  // Se è già un booleano, lo restituisce
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  
+  // Altrimenti converte da numero a booleano
+  return !!value;
 }
 
 /**
@@ -87,14 +91,21 @@ export function dbToBoolean(value: number | boolean | null | undefined): boolean
  * @returns L'oggetto convertito nel formato appropriato per il database
  */
 export function jsonToDb(value: any): string | object | null {
-  if (value === null || value === undefined) return null;
-  
-  // SQLite richiede JSON come stringa
-  if (DB_TYPE === 'sqlite') {
-    return typeof value === 'string' ? value : JSON.stringify(value);
+  if (value === null || value === undefined) {
+    return null;
   }
   
-  // Altri database possono usare direttamente l'oggetto
+  // Per SQLite, converte in stringa JSON
+  if (config.database.type === 'sqlite') {
+    try {
+      return JSON.stringify(value);
+    } catch (error) {
+      console.error("Errore nella serializzazione JSON:", error);
+      return null;
+    }
+  }
+  
+  // Per altri database, usa l'oggetto come è
   return value;
 }
 
@@ -104,22 +115,22 @@ export function jsonToDb(value: any): string | object | null {
  * @returns Un oggetto JSON
  */
 export function dbToJson(value: string | object | null | undefined): any {
-  if (value === null || value === undefined) return null;
+  if (value === null || value === undefined) {
+    return null;
+  }
   
-  // Se è già un oggetto, return direttamente
-  if (typeof value === 'object' && value !== null) return value;
-  
-  // Per SQLite, converte la stringa JSON in oggetto
+  // Se è una stringa, prova a deserializzarla
   if (typeof value === 'string') {
     try {
       return JSON.parse(value);
-    } catch (e) {
-      console.error('Errore durante il parsing JSON:', e);
+    } catch (error) {
+      console.error("Errore nella deserializzazione JSON:", error);
       return null;
     }
   }
   
-  return null;
+  // Altrimenti restituisce l'oggetto come è
+  return value;
 }
 
 /**
@@ -131,21 +142,19 @@ export function dbToJson(value: string | object | null | undefined): any {
 export function prepareForDb<T extends object>(obj: T): any {
   if (!obj) return obj;
   
-  const result: any = { ...obj };
+  const result: any = {};
   
-  // Itera attraverso le proprietà dell'oggetto
-  for (const [key, value] of Object.entries(result)) {
-    // Converti Date
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) continue;
+    
     if (value instanceof Date) {
       result[key] = dateToDb(value);
-    }
-    // Converti booleani
-    else if (typeof value === 'boolean') {
+    } else if (typeof value === 'boolean') {
       result[key] = booleanToDb(value);
-    }
-    // Converti oggetti (JSON)
-    else if (typeof value === 'object' && value !== null && !(value instanceof Date)) {
+    } else if (typeof value === 'object' && value !== null) {
       result[key] = jsonToDb(value);
+    } else {
+      result[key] = value;
     }
   }
   
@@ -157,7 +166,12 @@ export function prepareForDb<T extends object>(obj: T): any {
  * @param obj L'oggetto dal database
  * @returns L'oggetto convertito
  */
-export function convertFromDb<T extends object>(obj: T, dateFields: string[] = [], boolFields: string[] = [], jsonFields: string[] = []): any {
+export function convertFromDb<T extends object>(
+  obj: T, 
+  dateFields: string[] = [], 
+  boolFields: string[] = [], 
+  jsonFields: string[] = []
+): any {
   if (!obj) return obj;
   
   const result: any = { ...obj };

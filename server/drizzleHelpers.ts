@@ -1,154 +1,198 @@
-import { eq } from "drizzle-orm";
-import { db } from "./db";
+/**
+ * Helper per eseguire query Drizzle con gestione automatica dei tipi di dati
+ * Supporta diversi tipi di database (SQLite, PostgreSQL, MySQL)
+ */
+import { SQLiteTable } from "drizzle-orm/sqlite-core";
+import { type SQLiteColumn } from "drizzle-orm/sqlite-core/columns";
+import { sql, eq } from "drizzle-orm";
+import { db, sqlite } from "./db";
 import { prepareForDb, convertFromDb } from "./dbUtils";
 
 /**
- * Helper per eseguire una query select con Drizzle
- * Converte i dati nel formato corretto
+ * Seleziona tutti i record da una tabella con conversione automatica dei tipi
  */
 export async function dbSelect<T>(
-  table: any, 
-  whereClause?: any,
+  table: SQLiteTable,
+  conditions?: any,
   dateFields: string[] = [],
   boolFields: string[] = [],
-  jsonFields: string[] = [],
-  limit?: number
+  jsonFields: string[] = []
 ): Promise<T[]> {
   try {
     let query = db.select().from(table);
     
-    if (whereClause) {
-      query = query.where(whereClause);
+    if (conditions) {
+      query = query.where(conditions);
     }
     
-    if (limit) {
-      query = query.limit(limit);
-    }
-
+    // Esegui la query
     const results = await query;
     
-    return results.map(item => 
-      convertFromDb(item, dateFields, boolFields, jsonFields)
+    // Converti i tipi per ogni risultato
+    return results.map((result) => 
+      convertFromDb(result, dateFields, boolFields, jsonFields)
     ) as T[];
   } catch (error) {
-    console.error('Error in dbSelect:', error);
+    console.error(`Errore in dbSelect:`, error);
     throw error;
   }
 }
 
 /**
- * Helper per eseguire una query select by ID con Drizzle
- * Converte i dati nel formato corretto
+ * Seleziona un record per ID con conversione automatica dei tipi
  */
 export async function dbSelectById<T>(
-  table: any, 
-  idField: any,
+  table: SQLiteTable,
+  idColumn: SQLiteColumn<any, object, object>, 
   id: number,
   dateFields: string[] = [],
   boolFields: string[] = [],
   jsonFields: string[] = []
 ): Promise<T | undefined> {
   try {
-    const [result] = await db
-      .select()
-      .from(table)
-      .where(eq(idField, id));
+    // Esegui una query ottimizzata per SQLite usando la sintassi SQL raw
+    const statement = sqlite.prepare(`
+      SELECT * FROM ${table._.config.name} 
+      WHERE ${idColumn.name} = ?
+    `);
+    
+    const result = statement.get(id);
     
     if (!result) return undefined;
     
-    return convertFromDb(result, dateFields, boolFields, jsonFields) as T;
+    // Converti i tipi per il risultato
+    return convertFromDb(
+      result, 
+      dateFields, 
+      boolFields, 
+      jsonFields
+    ) as T;
   } catch (error) {
-    console.error('Error in dbSelectById:', error);
+    console.error(`Errore in dbSelectById:`, error);
     throw error;
   }
 }
 
 /**
- * Helper per eseguire una query insert con Drizzle
- * Prepara i dati nel formato corretto per il database
+ * Inserisce un record con conversione automatica dei tipi
  */
 export async function dbInsert<T>(
-  table: any, 
+  table: SQLiteTable,
   data: any,
-  returning: boolean = true
+  dateFields: string[] = [],
+  boolFields: string[] = [],
+  jsonFields: string[] = []
 ): Promise<T> {
   try {
+    // Prepara i dati per il database
     const preparedData = prepareForDb(data);
     
-    if (returning) {
-      const [result] = await db
-        .insert(table)
-        .values(preparedData)
-        .returning();
-      
-      return result as T;
-    } else {
-      await db
-        .insert(table)
-        .values(preparedData);
-      
-      return data as T;
-    }
+    // Esegui la query di inserimento
+    // Usa SQL raw per evitare problemi di binding
+    const columns = Object.keys(preparedData).join(', ');
+    const placeholders = Object.keys(preparedData).map(() => '?').join(', ');
+    const values = Object.values(preparedData);
+    
+    const statement = sqlite.prepare(`
+      INSERT INTO ${table._.config.name} (${columns})
+      VALUES (${placeholders})
+      RETURNING *
+    `);
+    
+    const result = statement.get(...values);
+    
+    // Converti i tipi per il risultato
+    return convertFromDb(
+      result, 
+      dateFields, 
+      boolFields, 
+      jsonFields
+    ) as T;
   } catch (error) {
-    console.error('Error in dbInsert:', error);
+    console.error(`Errore in dbInsert:`, error);
     throw error;
   }
 }
 
 /**
- * Helper per eseguire una query update con Drizzle
- * Prepara i dati nel formato corretto per il database
+ * Aggiorna un record con conversione automatica dei tipi
  */
 export async function dbUpdate<T>(
-  table: any, 
-  idField: any,
+  table: SQLiteTable,
+  idColumn: SQLiteColumn<any, object, object>,
   id: number,
   data: any,
-  returning: boolean = true
+  returnData: boolean = false,
+  dateFields: string[] = [],
+  boolFields: string[] = [],
+  jsonFields: string[] = []
 ): Promise<T | undefined> {
   try {
+    // Prepara i dati per il database
     const preparedData = prepareForDb(data);
     
-    if (returning) {
-      const [result] = await db
-        .update(table)
-        .set(preparedData)
-        .where(eq(idField, id))
-        .returning();
+    if (Object.keys(preparedData).length === 0) {
+      return undefined;
+    }
+    
+    // Costruisci SET clause
+    const setClause = Object.keys(preparedData)
+      .map(key => `${key} = ?`)
+      .join(', ');
+    
+    // Valori per il binding
+    const values = [...Object.values(preparedData), id];
+    
+    let query = `
+      UPDATE ${table._.config.name}
+      SET ${setClause}
+      WHERE ${idColumn.name} = ?
+    `;
+    
+    if (returnData) {
+      query += ' RETURNING *';
+      const statement = sqlite.prepare(query);
+      const result = statement.get(...values);
       
-      return result as T;
+      if (!result) return undefined;
+      
+      // Converti i tipi per il risultato
+      return convertFromDb(
+        result, 
+        dateFields, 
+        boolFields, 
+        jsonFields
+      ) as T;
     } else {
-      await db
-        .update(table)
-        .set(preparedData)
-        .where(eq(idField, id));
-      
+      const statement = sqlite.prepare(query);
+      statement.run(...values);
       return undefined;
     }
   } catch (error) {
-    console.error('Error in dbUpdate:', error);
+    console.error(`Errore in dbUpdate:`, error);
     throw error;
   }
 }
 
 /**
- * Helper per eseguire una query delete con Drizzle
- * Restituisce true se l'operazione ha avuto successo
+ * Elimina un record
  */
 export async function dbDelete(
-  table: any, 
-  idField: any,
+  table: SQLiteTable,
+  idColumn: SQLiteColumn<any, object, object>,
   id: number
 ): Promise<boolean> {
   try {
-    const [result] = await db
-      .delete(table)
-      .where(eq(idField, id))
-      .returning();
+    const statement = sqlite.prepare(`
+      DELETE FROM ${table._.config.name}
+      WHERE ${idColumn.name} = ?
+      RETURNING ${idColumn.name}
+    `);
     
+    const result = statement.get(id);
     return !!result;
   } catch (error) {
-    console.error('Error in dbDelete:', error);
+    console.error(`Errore in dbDelete:`, error);
     throw error;
   }
 }
