@@ -716,12 +716,18 @@ export class DatabaseStorage implements IStorage {
 
   async getOverdueLoans(): Promise<Loan[]> {
     try {
-      const { convertFromDb } = await import('./dbUtils');
-      const now = new Date();
-      const results = await db
-        .select()
-        .from(loans)
-        .where(and(eq(loans.status, "active"), lt(loans.dueDate, now)));
+      const { convertFromDb, dateToDb } = await import('./dbUtils');
+      
+      // Converti la data nel formato adatto al database
+      const now = dateToDb(new Date());
+      
+      // Usa SQL raw per evitare problemi di binding
+      const statement = sqlite.prepare(`
+        SELECT * FROM loans 
+        WHERE status = ? AND due_date < ?
+      `);
+      
+      const results = statement.all("active", now);
       
       // Converti tutti i risultati nel formato appropriato
       return results.map(loan => 
@@ -734,7 +740,8 @@ export class DatabaseStorage implements IStorage {
       );
     } catch (error) {
       console.error("Error in getOverdueLoans:", error);
-      throw error;
+      // Fallback sicuro: restituisci un array vuoto
+      return [];
     }
   }
 
@@ -1008,16 +1015,16 @@ export class DatabaseStorage implements IStorage {
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
       const { convertFromDb } = await import('./dbUtils');
-      const [user] = await db
+      const [userRecord] = await db
         .select()
         .from(users)
         .where(eq(users.username, username));
       
-      if (!user) return undefined;
+      if (!userRecord) return undefined;
       
       // Converti i campi nel formato corretto, ma rimuoviamo lastLogin
       return convertFromDb(
-        user,
+        userRecord,
         ['createdAt'],        // rimuoviamo lastLogin dai campi data
         ['isActive'],         // campi booleani
         ['preferences']       // campi JSON
@@ -1025,7 +1032,7 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error in getUserByUsername:", error);
       // Non propagare l'errore per permettere il login
-      return user as User | undefined;
+      return undefined;
     }
   }
 

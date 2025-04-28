@@ -50,10 +50,34 @@ export async function dbSelectById<T>(
   jsonFields: string[] = []
 ): Promise<T | undefined> {
   try {
+    // Usa un approccio più sicuro senza dipendere da proprietà che potrebbero non esistere
+    let tableName = '';
+    
+    // Ottieni il nome della tabella in modo sicuro
+    try {
+      if (table && (table as any)._ && (table as any)._.config) {
+        tableName = (table as any)._.config.name;
+      } else {
+        // Fallback: usa drizzle-orm per ottenere il nome della tabella
+        tableName = table[Symbol.for('drizzle:Name')] || '';
+      }
+      
+      if (!tableName) {
+        throw new Error('Impossibile determinare il nome della tabella');
+      }
+    } catch (e) {
+      console.error("Errore nel determinare il nome della tabella:", e);
+      // Usiamo un approccio alternativo con drizzle-orm
+      return await getRecordByIdWithDrizzle<T>(table, idColumn, id, dateFields, boolFields, jsonFields);
+    }
+    
+    // Ottieni il nome della colonna ID in modo sicuro
+    const idColumnName = idColumn.name || 'id';
+    
     // Esegui una query ottimizzata per SQLite usando la sintassi SQL raw
     const statement = sqlite.prepare(`
-      SELECT * FROM ${table._.config.name} 
-      WHERE ${idColumn.name} = ?
+      SELECT * FROM ${tableName} 
+      WHERE ${idColumnName} = ?
     `);
     
     const result = statement.get(id);
@@ -69,7 +93,42 @@ export async function dbSelectById<T>(
     ) as T;
   } catch (error) {
     console.error(`Errore in dbSelectById:`, error);
-    throw error;
+    // Usiamo un approccio alternativo con drizzle-orm
+    return await getRecordByIdWithDrizzle<T>(table, idColumn, id, dateFields, boolFields, jsonFields);
+  }
+}
+
+/**
+ * Funzione alternativa per ottenere un record per ID usando l'API di Drizzle
+ */
+async function getRecordByIdWithDrizzle<T>(
+  table: SQLiteTable,
+  idColumn: SQLiteColumn<any, object, object>,
+  id: number,
+  dateFields: string[] = [],
+  boolFields: string[] = [],
+  jsonFields: string[] = []
+): Promise<T | undefined> {
+  try {
+    // Usa l'API di Drizzle per eseguire una query
+    const results = await db
+      .select()
+      .from(table)
+      .where(eq(idColumn, id))
+      .limit(1);
+    
+    if (!results || results.length === 0) return undefined;
+    
+    // Converti i tipi
+    return convertFromDb(
+      results[0],
+      dateFields,
+      boolFields,
+      jsonFields
+    ) as T;
+  } catch (error) {
+    console.error(`Errore in getRecordByIdWithDrizzle:`, error);
+    return undefined;
   }
 }
 
@@ -87,14 +146,32 @@ export async function dbInsert<T>(
     // Prepara i dati per il database
     const preparedData = prepareForDb(data);
     
+    // Ottieni il nome della tabella in modo sicuro
+    let tableName = '';
+    try {
+      if (table && (table as any)._ && (table as any)._.config) {
+        tableName = (table as any)._.config.name;
+      } else {
+        // Fallback usando il simbolo di drizzle
+        tableName = table[Symbol.for('drizzle:Name')] || '';
+      }
+      
+      if (!tableName) {
+        throw new Error('Impossibile determinare il nome della tabella');
+      }
+    } catch (e) {
+      console.error("Errore nel determinare il nome della tabella:", e);
+      // Usa l'API di Drizzle come fallback
+      return await insertRecordWithDrizzle<T>(table, data, dateFields, boolFields, jsonFields);
+    }
+    
     // Esegui la query di inserimento
-    // Usa SQL raw per evitare problemi di binding
     const columns = Object.keys(preparedData).join(', ');
     const placeholders = Object.keys(preparedData).map(() => '?').join(', ');
     const values = Object.values(preparedData);
     
     const statement = sqlite.prepare(`
-      INSERT INTO ${table._.config.name} (${columns})
+      INSERT INTO ${tableName} (${columns})
       VALUES (${placeholders})
       RETURNING *
     `);
@@ -110,6 +187,41 @@ export async function dbInsert<T>(
     ) as T;
   } catch (error) {
     console.error(`Errore in dbInsert:`, error);
+    // Usa l'API di Drizzle come fallback
+    return await insertRecordWithDrizzle<T>(table, data, dateFields, boolFields, jsonFields);
+  }
+}
+
+/**
+ * Funzione alternativa per inserire un record usando l'API di Drizzle
+ */
+async function insertRecordWithDrizzle<T>(
+  table: SQLiteTable,
+  data: any,
+  dateFields: string[] = [],
+  boolFields: string[] = [],
+  jsonFields: string[] = []
+): Promise<T> {
+  try {
+    // Prepara i dati per il database
+    const preparedData = prepareForDb(data);
+    
+    // Usa l'API di Drizzle per l'inserimento
+    const result = await db.insert(table).values(preparedData).returning();
+    
+    if (!result || result.length === 0) {
+      throw new Error('Nessun risultato restituito dopo l\'inserimento');
+    }
+    
+    // Converti i tipi
+    return convertFromDb(
+      result[0],
+      dateFields,
+      boolFields,
+      jsonFields
+    ) as T;
+  } catch (error) {
+    console.error(`Errore in insertRecordWithDrizzle:`, error);
     throw error;
   }
 }
