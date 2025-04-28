@@ -554,7 +554,19 @@ export class DatabaseStorage implements IStorage {
   }
   // Item methods
   async getItems(): Promise<Item[]> {
-    return db.select().from(items);
+    try {
+      const { dbSelect } = await import('./drizzleHelpers');
+      return await dbSelect<Item>(
+        items, 
+        undefined,
+        ['purchaseDate', 'warrantyExpires', 'maintenanceDate', 'lastUpdated'], // campi data
+        [], // campi booleani
+        ['metadata'] // campi JSON
+      );
+    } catch (error) {
+      console.error("Error in getItems:", error);
+      throw error;
+    }
   }
 
   async getItem(id: number): Promise<Item | undefined> {
