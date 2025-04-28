@@ -16,13 +16,16 @@ import path from "path";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
 import { DOMImplementation, XMLSerializer } from "xmldom";
+import { setupAuth, isAuthenticated, isAdmin } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication routes and middleware
+  setupAuth(app);
   // API Routes
   const apiRouter = app.route('/api');
   
-  // Item routes
-  app.get('/api/items', async (req, res) => {
+  // Item routes - require authentication
+  app.get('/api/items', isAuthenticated, async (req, res) => {
     const items = await storage.getItems();
     res.json(items);
   });
@@ -52,7 +55,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(item);
   });
   
-  app.post('/api/items', async (req, res) => {
+  app.post('/api/items', isAuthenticated, async (req, res) => {
     try {
       const validatedData = itemFormSchema.parse(req.body);
       
