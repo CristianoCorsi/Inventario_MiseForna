@@ -879,28 +879,62 @@ export class DatabaseStorage implements IStorage {
 
   // User management methods
   async getUsers(): Promise<User[]> {
-    return await db.select().from(users).all();
+    const { dbSelect } = await import('./drizzleHelpers');
+    return await dbSelect<User>(
+      users, 
+      undefined,
+      ['lastLogin', 'createdAt'], // campi data
+      ['isActive'],               // campi booleani 
+      ['preferences']             // campi JSON
+    );
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    const { dbSelectById } = await import('./drizzleHelpers');
+    return await dbSelectById<User>(
+      users, 
+      users.id, 
+      id,
+      ['lastLogin', 'createdAt'],  // campi data
+      ['isActive'],                // campi booleani
+      ['preferences']              // campi JSON
+    );
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.username, username));
-    return user;
+    try {
+      const { convertFromDb } = await import('./dbUtils');
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, username));
+      
+      if (!user) return undefined;
+      
+      // Converti i campi nel formato corretto
+      return convertFromDb(
+        user,
+        ['lastLogin', 'createdAt'],  // campi data
+        ['isActive'],                // campi booleani
+        ['preferences']              // campi JSON
+      );
+    } catch (error) {
+      console.error("Error in getUserByUsername:", error);
+      throw error;
+    }
   }
 
   async createUser(user: InsertUser): Promise<User> {
     // Debug dell'oggetto user prima di salvarlo
     console.log("Creating user with data:", JSON.stringify(user));
 
-    // SQLite richiede conversioni specifiche per i tipi di dati
     try {
+      const { jsonToDb, booleanToDb } = await import('./dbUtils');
+      
+      // Prepara i dati per SQLite
+      const preferences = jsonToDb(user.preferences);
+      const isActive = booleanToDb(user.isActive === undefined ? true : user.isActive);
+      
       // Inserimento con metodo raw SQL per evitare problemi di binding
       const result = sqlite
         .prepare(
@@ -916,8 +950,8 @@ export class DatabaseStorage implements IStorage {
           user.email || null,
           user.fullName || null,
           user.role || "staff",
-          user.isActive === true ? 1 : 0,
-          user.preferences || null,
+          isActive,
+          preferences
         );
 
       // Recupera l'utente appena creato
@@ -936,20 +970,31 @@ export class DatabaseStorage implements IStorage {
     id: number,
     user: Partial<InsertUser>,
   ): Promise<User | undefined> {
-    const [updatedUser] = await db
-      .update(users)
-      .set(user)
-      .where(eq(users.id, id))
-      .returning();
-    return updatedUser;
+    try {
+      const { dbUpdate } = await import('./drizzleHelpers');
+      // Aggiorna l'utente con i dati convertiti correttamente
+      return await dbUpdate<User>(
+        users,
+        users.id,
+        id,
+        user,
+        true
+      );
+    } catch (error) {
+      console.error("Error in updateUser:", error);
+      throw error;
+    }
   }
 
   async deleteUser(id: number): Promise<boolean> {
-    const [deletedUser] = await db
-      .delete(users)
-      .where(eq(users.id, id))
-      .returning();
-    return !!deletedUser;
+    try {
+      const { dbDelete } = await import('./drizzleHelpers');
+      // Elimina l'utente con ID
+      return await dbDelete(users, users.id, id);
+    } catch (error) {
+      console.error("Error in deleteUser:", error);
+      throw error;
+    }
   }
 
   async resetPassword(
@@ -960,13 +1005,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateLastLogin(id: number): Promise<User | undefined> {
-    const nowTs = Date.now();
-    const [updatedUser] = await db
-      .update(users)
-      .set({ lastLogin: nowTs })
-      .where(eq(users.id, id))
-      .returning();
-    return updatedUser;
+    try {
+      const { dateToDb } = await import('./dbUtils');
+      const now = new Date();
+      const lastLogin = dateToDb(now);
+
+      return await this.updateUser(id, { lastLogin });
+    } catch (error) {
+      console.error("Error in updateLastLogin:", error);
+      throw error;
+    }
   }
 
   async changePassword(
