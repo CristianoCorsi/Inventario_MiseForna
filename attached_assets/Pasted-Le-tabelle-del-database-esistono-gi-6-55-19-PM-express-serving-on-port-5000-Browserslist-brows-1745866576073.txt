@@ -1,0 +1,39 @@
+Le tabelle del database esistono già
+6:55:19 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+6:55:27 PM [express] GET /api/user 401 in 2ms :: {"error":"Not authenticated"}
+Errore in dbUpdate: SqliteError: no such column: lastLogin
+    at Database.prepare (/home/runner/workspace/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at dbUpdate (/home/runner/workspace/server/drizzleHelpers.ts:165:32)
+    at DatabaseStorage.updateUser (/home/runner/workspace/server/storage.ts:1070:20)
+    at async DatabaseStorage.updateLastLogin (/home/runner/workspace/server/storage.ts:1107:14)
+    at async Strategy._verify (/home/runner/workspace/server/auth.ts:68:9) {
+  code: 'SQLITE_ERROR'
+}
+Error in updateUser: SqliteError: no such column: lastLogin
+    at Database.prepare (/home/runner/workspace/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at dbUpdate (/home/runner/workspace/server/drizzleHelpers.ts:165:32)
+    at DatabaseStorage.updateUser (/home/runner/workspace/server/storage.ts:1070:20)
+    at async DatabaseStorage.updateLastLogin (/home/runner/workspace/server/storage.ts:1107:14)
+    at async Strategy._verify (/home/runner/workspace/server/auth.ts:68:9) {
+  code: 'SQLITE_ERROR'
+}
+Error in updateLastLogin: SqliteError: no such column: lastLogin
+    at Database.prepare (/home/runner/workspace/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at dbUpdate (/home/runner/workspace/server/drizzleHelpers.ts:165:32)
+    at DatabaseStorage.updateUser (/home/runner/workspace/server/storage.ts:1070:20)
+    at async DatabaseStorage.updateLastLogin (/home/runner/workspace/server/storage.ts:1107:14)
+    at async Strategy._verify (/home/runner/workspace/server/auth.ts:68:9) {
+  code: 'SQLITE_ERROR'
+}
+Login error: SqliteError: no such column: lastLogin
+    at Database.prepare (/home/runner/workspace/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at dbUpdate (/home/runner/workspace/server/drizzleHelpers.ts:165:32)
+    at DatabaseStorage.updateUser (/home/runner/workspace/server/storage.ts:1070:20)
+    at async DatabaseStorage.updateLastLogin (/home/runner/workspace/server/storage.ts:1107:14)
+    at async Strategy._verify (/home/runner/workspace/server/auth.ts:68:9) {
+  code: 'SQLITE_ERROR'
+}
+6:55:35 PM [express] POST /api/login 500 in 63ms :: {"error":"Internal server error"}
