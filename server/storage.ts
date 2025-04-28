@@ -695,22 +695,70 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getLoansByItemId(itemId: number): Promise<Loan[]> {
-    return db.select().from(loans).where(eq(loans.itemId, itemId));
+    try {
+      const { convertFromDb } = await import('./dbUtils');
+      const results = await db.select().from(loans).where(eq(loans.itemId, itemId));
+      
+      // Converti tutti i risultati nel formato appropriato
+      return results.map(loan => 
+        convertFromDb(
+          loan,
+          ['dueDate', 'loanDate', 'returnDate'], // campi data
+          [], // campi booleani
+          ['metadata'] // campi JSON
+        )
+      );
+    } catch (error) {
+      console.error("Error in getLoansByItemId:", error);
+      throw error;
+    }
   }
 
   async getOverdueLoans(): Promise<Loan[]> {
-    const now = new Date();
-    return db
-      .select()
-      .from(loans)
-      .where(and(eq(loans.status, "active"), lt(loans.dueDate, now)));
+    try {
+      const { convertFromDb } = await import('./dbUtils');
+      const now = new Date();
+      const results = await db
+        .select()
+        .from(loans)
+        .where(and(eq(loans.status, "active"), lt(loans.dueDate, now)));
+      
+      // Converti tutti i risultati nel formato appropriato
+      return results.map(loan => 
+        convertFromDb(
+          loan,
+          ['dueDate', 'loanDate', 'returnDate'], // campi data
+          [], // campi booleani
+          ['metadata'] // campi JSON
+        )
+      );
+    } catch (error) {
+      console.error("Error in getOverdueLoans:", error);
+      throw error;
+    }
   }
 
   async getActiveLoans(): Promise<Loan[]> {
-    return db
-      .select()
-      .from(loans)
-      .where(or(eq(loans.status, "active"), eq(loans.status, "overdue")));
+    try {
+      const { convertFromDb } = await import('./dbUtils');
+      const results = await db
+        .select()
+        .from(loans)
+        .where(or(eq(loans.status, "active"), eq(loans.status, "overdue")));
+      
+      // Converti tutti i risultati nel formato appropriato
+      return results.map(loan => 
+        convertFromDb(
+          loan,
+          ['dueDate', 'loanDate', 'returnDate'], // campi data
+          [], // campi booleani
+          ['metadata'] // campi JSON
+        )
+      );
+    } catch (error) {
+      console.error("Error in getActiveLoans:", error);
+      throw error;
+    }
   }
 
   async createLoan(loan: InsertLoan): Promise<Loan> {
