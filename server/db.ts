@@ -120,11 +120,12 @@ export async function initializeDatabase() {
           preferences TEXT
         );
         
-        CREATE TABLE IF NOT EXISTS sessions (
-          sid TEXT PRIMARY KEY,
-          sess TEXT NOT NULL,
-          expire INTEGER NOT NULL
-        );
+        -- Sessions ora sono in-memory per compatibilità
+        -- CREATE TABLE IF NOT EXISTS sessions (
+        --  sid TEXT PRIMARY KEY,
+        --  sess TEXT NOT NULL,
+        --  expire INTEGER NOT NULL
+        -- );
       `);
       
       console.log('Database inizializzato con successo');

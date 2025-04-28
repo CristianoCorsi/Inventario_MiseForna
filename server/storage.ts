@@ -14,7 +14,6 @@ import {
   User,
   InsertUser,
   Session,
-  InsertSession,
   items,
   locations,
   loans,
@@ -22,7 +21,6 @@ import {
   settings,
   qrCodes,
   users,
-  sessions,
 } from "@shared/schema";
 import { db, sqlite } from "./db";
 import { eq, and, or, isNull, desc, asc, lt } from "drizzle-orm";

@@ -182,12 +182,12 @@ export const users = Table("users", {
   preferences: JSON_TYPE("preferences"),
 });
 
-// User sessions for authentication
-export const sessions = Table("sessions", {
-  sid: TEXT("sid").primaryKey(),
-  sess: TEXT("sess").notNull(), // Store as TEXT for SQLite compatibility
-  expire: INTEGER("expire").notNull(), // Store as INTEGER (timestamp) for SQLite compatibility
-});
+// User sessions for authentication - Use MemoryStore instead for compatibility
+// export const sessions = Table("sessions", {
+//   sid: TEXT("sid").primaryKey(),
+//   sess: TEXT("sess").notNull(), // Store as TEXT for SQLite compatibility
+//   expire: INTEGER("expire").notNull(), // Store as INTEGER (timestamp) for SQLite compatibility
+// });
 
 // Insert schemas
 export const insertItemSchema = createInsertSchema(items).omit({ id: true });
@@ -197,7 +197,12 @@ export const insertActivitySchema = createInsertSchema(activities).omit({ id: tr
 export const insertSettingSchema = createInsertSchema(settings).omit({ id: true });
 export const insertQrCodeSchema = createInsertSchema(qrCodes).omit({ id: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, lastLogin: true });
-export const insertSessionSchema = createInsertSchema(sessions);
+// Session types defined manually for MemoryStore compatibility
+export interface Session {
+  sid: string;
+  sess: Record<string, any>;
+  expire: number;
+}
 
 // Select types
 export type Item = typeof items.$inferSelect;
@@ -207,7 +212,6 @@ export type Activity = typeof activities.$inferSelect;
 export type Setting = typeof settings.$inferSelect;
 export type QrCode = typeof qrCodes.$inferSelect;
 export type User = typeof users.$inferSelect;
-export type Session = typeof sessions.$inferSelect;
 
 // Insert types
 export type InsertItem = z.infer<typeof insertItemSchema>;
@@ -217,7 +221,6 @@ export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
 export type InsertQrCode = z.infer<typeof insertQrCodeSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type InsertSession = z.infer<typeof insertSessionSchema>;
 
 // Extended schemas for forms
 export const itemFormSchema = insertItemSchema.extend({
