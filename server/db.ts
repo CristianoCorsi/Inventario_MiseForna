@@ -25,7 +25,7 @@ function createDataDirectory() {
  */
 function getSQLitePath() {
   const DATA_DIR = createDataDirectory();
-  return path.join(DATA_DIR, 'inventario.db');
+  return path.join(DATA_DIR, 'inventory.db');
 }
 
 // Inizializza SQLite come database predefinito
