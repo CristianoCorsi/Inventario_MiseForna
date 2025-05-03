@@ -5,7 +5,8 @@ import itTranslations from "../locales/it.json";
 import enTranslations from "../locales/en.json";
 
 // Usa import.meta.env invece di process.env in Vite
-const FORCE_ITALIAN = import.meta.env.VITE_FORCE_ITALIAN !== 'false';
+//const FORCE_ITALIAN = import.meta.env.VITE_FORCE_ITALIAN !== 'false';
+const FORCE_ITALIAN = false;
 
 // Import translations from JSON files
 const it = itTranslations;
@@ -79,13 +80,15 @@ export function setLanguage(lang: "en" | "it"): void {
     currentLanguage = "it";
     localStorage.setItem("language", "it");
     console.log("[i18n] Lingua forzata a:", "it");
-    return;
+  } else {
+    currentLanguage = lang;
+    localStorage.setItem("language", lang);
+    console.log("[i18n] Lingua impostata:", lang);
   }
-
-  currentLanguage = lang;
-  localStorage.setItem("language", lang);
-  console.log("[i18n] Lingua impostata:", lang);
+  // NOTIFICA tutti gli iscritti
+  listeners.forEach((cb) => cb());
 }
+
 
 /**
  * Initialize language from stored preference or browser language
