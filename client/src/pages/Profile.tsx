@@ -7,8 +7,22 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { UserProfileData, ChangePasswordData } from "@shared/schema";
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -20,14 +34,18 @@ const profileSchema = z.object({
   email: z.string().email("Invalid email format").optional().or(z.literal("")),
 });
 
-const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z.string().min(6, "New password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Confirm password is required"),
-}).refine(data => data.newPassword === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z
+      .string()
+      .min(6, "New password must be at least 6 characters"),
+    confirmPassword: z.string().min(6, "Confirm password is required"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 export default function Profile() {
   const { user } = useAuth();
@@ -90,7 +108,8 @@ export default function Profile() {
     onError: (error) => {
       toast({
         title: "Password change failed",
-        description: "There was an error changing your password. Please check your current password.",
+        description:
+          "There was an error changing your password. Please check your current password.",
         variant: "destructive",
       });
     },
@@ -106,11 +125,13 @@ export default function Profile() {
 
   if (!user) {
     return (
-      <div className="container py-10">
+      <div className="py-6 mx-auto max-w-5xl px-4 sm:px-6 md:px-8">
         <Card>
           <CardHeader>
             <CardTitle>Profile</CardTitle>
-            <CardDescription>Loading your profile information...</CardDescription>
+            <CardDescription>
+              Loading your profile information...
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center py-10">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -121,15 +142,15 @@ export default function Profile() {
   }
 
   return (
-    <div className="container py-10">
+    <div className="py-6 mx-auto max-w-5xl px-4 sm:px-6 md:px-8">
       <h1 className="text-3xl font-bold mb-6">My Profile</h1>
-      
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="profile">Profile Info</TabsTrigger>
           <TabsTrigger value="password">Password</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="profile" className="mt-6">
           <Card>
             <CardHeader>
@@ -140,7 +161,10 @@ export default function Profile() {
             </CardHeader>
             <CardContent>
               <Form {...profileForm}>
-                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
+                <form
+                  onSubmit={profileForm.handleSubmit(onProfileSubmit)}
+                  className="space-y-6"
+                >
                   <FormField
                     control={profileForm.control}
                     name="fullName"
@@ -154,7 +178,7 @@ export default function Profile() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={profileForm.control}
                     name="email"
@@ -162,21 +186,34 @@ export default function Profile() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="john@example.com" {...field} />
+                          <Input
+                            type="email"
+                            placeholder="john@example.com"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <div className="text-sm text-muted-foreground">
-                    <p><strong>Username:</strong> {user.username}</p>
-                    <p><strong>Role:</strong> {user.role}</p>
-                    <p><strong>Last Login:</strong> {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}</p>
+                    <p>
+                      <strong>Username:</strong> {user.username}
+                    </p>
+                    <p>
+                      <strong>Role:</strong> {user.role}
+                    </p>
+                    <p>
+                      <strong>Last Login:</strong>{" "}
+                      {user.lastLogin
+                        ? new Date(user.lastLogin).toLocaleString()
+                        : "Never"}
+                    </p>
                   </div>
-                  
-                  <Button 
-                    type="submit" 
+
+                  <Button
+                    type="submit"
                     className="w-full"
                     disabled={updateProfileMutation.isPending}
                   >
@@ -197,7 +234,7 @@ export default function Profile() {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="password" className="mt-6">
           <Card>
             <CardHeader>
@@ -208,7 +245,10 @@ export default function Profile() {
             </CardHeader>
             <CardContent>
               <Form {...passwordForm}>
-                <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-6">
+                <form
+                  onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
+                  className="space-y-6"
+                >
                   <FormField
                     control={passwordForm.control}
                     name="currentPassword"
@@ -216,13 +256,17 @@ export default function Profile() {
                       <FormItem>
                         <FormLabel>Current Password</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
+                          <Input
+                            type="password"
+                            placeholder="••••••••"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={passwordForm.control}
                     name="newPassword"
@@ -230,13 +274,17 @@ export default function Profile() {
                       <FormItem>
                         <FormLabel>New Password</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
+                          <Input
+                            type="password"
+                            placeholder="••••••••"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={passwordForm.control}
                     name="confirmPassword"
@@ -244,15 +292,19 @@ export default function Profile() {
                       <FormItem>
                         <FormLabel>Confirm New Password</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
+                          <Input
+                            type="password"
+                            placeholder="••••••••"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
-                  <Button 
-                    type="submit" 
+
+                  <Button
+                    type="submit"
                     className="w-full"
                     disabled={changePasswordMutation.isPending}
                   >

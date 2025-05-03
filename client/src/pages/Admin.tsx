@@ -45,9 +45,22 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, UserPlus, Pencil, Trash, Key } from "lucide-react";
 
 // Validation schemas
@@ -68,13 +81,15 @@ const editUserSchema = z.object({
   isActive: z.boolean(),
 });
 
-const resetPasswordSchema = z.object({
-  newPassword: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string(),
-}).refine(data => data.newPassword === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+const resetPasswordSchema = z
+  .object({
+    newPassword: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 export default function AdminPage() {
   const { user: currentUser } = useAuth();
@@ -82,7 +97,8 @@ export default function AdminPage() {
   // State for dialogs
   const [isNewUserDialogOpen, setIsNewUserDialogOpen] = useState(false);
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
-  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] =
+    useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
@@ -119,7 +135,11 @@ export default function AdminPage() {
   });
 
   // Fetch users
-  const { data: users, isLoading, isError } = useQuery<User[]>({
+  const {
+    data: users,
+    isLoading,
+    isError,
+  } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     queryFn: getQueryFn({ on401: "throw" }),
   });
@@ -149,7 +169,13 @@ export default function AdminPage() {
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: z.infer<typeof editUserSchema> }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: z.infer<typeof editUserSchema>;
+    }) => {
       const res = await apiRequest("PUT", `/api/admin/users/${id}`, data);
       return await res.json();
     },
@@ -172,7 +198,11 @@ export default function AdminPage() {
 
   const resetPasswordMutation = useMutation({
     mutationFn: async ({ id, password }: { id: number; password: string }) => {
-      const res = await apiRequest("POST", `/api/admin/users/${id}/reset-password`, { newPassword: password });
+      const res = await apiRequest(
+        "POST",
+        `/api/admin/users/${id}/reset-password`,
+        { newPassword: password }
+      );
       return await res.json();
     },
     onSuccess: () => {
@@ -229,7 +259,10 @@ export default function AdminPage() {
 
   const onResetPasswordSubmit = (data: z.infer<typeof resetPasswordSchema>) => {
     if (selectedUser) {
-      resetPasswordMutation.mutate({ id: selectedUser.id, password: data.newPassword });
+      resetPasswordMutation.mutate({
+        id: selectedUser.id,
+        password: data.newPassword,
+      });
     }
   };
 
@@ -259,11 +292,13 @@ export default function AdminPage() {
   // If the current user is not an admin, show access denied
   if (currentUser?.role !== "admin") {
     return (
-      <div className="container py-10">
+      <div className="py-6 mx-auto max-w-5xl px-4 sm:px-6 md:px-8">
         <Card>
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
-            <CardDescription>You do not have permission to access this page.</CardDescription>
+            <CardDescription>
+              You do not have permission to access this page.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <p>This page is only accessible to administrators.</p>
@@ -275,7 +310,7 @@ export default function AdminPage() {
 
   if (isLoading) {
     return (
-      <div className="container py-10">
+      <div className="py-6 mx-auto max-w-5xl px-4 sm:px-6 md:px-8">
         <Card>
           <CardHeader>
             <CardTitle>User Management</CardTitle>
@@ -291,14 +326,16 @@ export default function AdminPage() {
 
   if (isError) {
     return (
-      <div className="container py-10">
+      <div className="py-6 mx-auto max-w-5xl px-4 sm:px-6 md:px-8">
         <Card>
           <CardHeader>
             <CardTitle>User Management</CardTitle>
             <CardDescription>Error loading users</CardDescription>
           </CardHeader>
           <CardContent>
-            <p>There was an error loading the user list. Please try again later.</p>
+            <p>
+              There was an error loading the user list. Please try again later.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -306,7 +343,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="container py-10">
+    <div className="py-6 mx-auto max-w-5xl px-4 sm:px-6 md:px-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">User Management</h1>
         <Button onClick={() => setIsNewUserDialogOpen(true)}>
@@ -318,7 +355,9 @@ export default function AdminPage() {
       <Card>
         <CardHeader>
           <CardTitle>User List</CardTitle>
-          <CardDescription>Manage system users and their permissions</CardDescription>
+          <CardDescription>
+            Manage system users and their permissions
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -340,21 +379,31 @@ export default function AdminPage() {
                   <TableCell>{user.fullName || "-"}</TableCell>
                   <TableCell>{user.email || "-"}</TableCell>
                   <TableCell>
-                    <span className={`rounded-full px-2 py-1 text-xs ${
-                      user.role === "admin" ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"
-                    }`}>
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs ${
+                        user.role === "admin"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
                       {user.role}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className={`rounded-full px-2 py-1 text-xs ${
-                      user.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                    }`}>
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs ${
+                        user.isActive
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
                       {user.isActive ? "Active" : "Inactive"}
                     </span>
                   </TableCell>
                   <TableCell>
-                    {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : "Never"}
+                    {user.lastLogin
+                      ? new Date(user.lastLogin).toLocaleString()
+                      : "Never"}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
@@ -408,7 +457,10 @@ export default function AdminPage() {
             </DialogDescription>
           </DialogHeader>
           <Form {...newUserForm}>
-            <form onSubmit={newUserForm.handleSubmit(onNewUserSubmit)} className="space-y-4">
+            <form
+              onSubmit={newUserForm.handleSubmit(onNewUserSubmit)}
+              className="space-y-4"
+            >
               <FormField
                 control={newUserForm.control}
                 name="username"
@@ -467,8 +519,8 @@ export default function AdminPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Role</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -520,16 +572,20 @@ export default function AdminPage() {
       </Dialog>
 
       {/* Edit User Dialog */}
-      <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
+      <Dialog
+        open={isEditUserDialogOpen}
+        onOpenChange={setIsEditUserDialogOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>
-              Update user information.
-            </DialogDescription>
+            <DialogDescription>Update user information.</DialogDescription>
           </DialogHeader>
           <Form {...editUserForm}>
-            <form onSubmit={editUserForm.handleSubmit(onEditUserSubmit)} className="space-y-4">
+            <form
+              onSubmit={editUserForm.handleSubmit(onEditUserSubmit)}
+              className="space-y-4"
+            >
               <FormField
                 control={editUserForm.control}
                 name="username"
@@ -575,8 +631,8 @@ export default function AdminPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Role</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -628,7 +684,10 @@ export default function AdminPage() {
       </Dialog>
 
       {/* Reset Password Dialog */}
-      <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+      <Dialog
+        open={isResetPasswordDialogOpen}
+        onOpenChange={setIsResetPasswordDialogOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
@@ -637,7 +696,10 @@ export default function AdminPage() {
             </DialogDescription>
           </DialogHeader>
           <Form {...resetPasswordForm}>
-            <form onSubmit={resetPasswordForm.handleSubmit(onResetPasswordSubmit)} className="space-y-4">
+            <form
+              onSubmit={resetPasswordForm.handleSubmit(onResetPasswordSubmit)}
+              className="space-y-4"
+            >
               <FormField
                 control={resetPasswordForm.control}
                 name="newPassword"
@@ -665,7 +727,10 @@ export default function AdminPage() {
                 )}
               />
               <DialogFooter>
-                <Button type="submit" disabled={resetPasswordMutation.isPending}>
+                <Button
+                  type="submit"
+                  disabled={resetPasswordMutation.isPending}
+                >
                   {resetPasswordMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -682,19 +747,25 @@ export default function AdminPage() {
       </Dialog>
 
       {/* Delete User Confirmation */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the user <strong>{selectedUser?.username}</strong> and cannot be undone.
+              This will permanently delete the user{" "}
+              <strong>{selectedUser?.username}</strong> and cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700"
-              onClick={() => selectedUser && deleteUserMutation.mutate(selectedUser.id)}
+              onClick={() =>
+                selectedUser && deleteUserMutation.mutate(selectedUser.id)
+              }
               disabled={deleteUserMutation.isPending}
             >
               {deleteUserMutation.isPending ? (
