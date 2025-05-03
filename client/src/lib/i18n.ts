@@ -24,6 +24,22 @@ const translations: TranslationsType = {
   en,
 };
 
+// helper per deep-get
+function getNestedTranslation(
+  obj: Record<string, any>,
+  key: string
+): string | undefined {
+  return key
+    .split(".")
+    .reduce<string | Record<string, any> | undefined>(
+      (acc, part) =>
+        acc && typeof acc === "object" && part in acc
+          ? (acc as Record<string, any>)[part]
+          : undefined,
+      obj
+    ) as string | undefined;
+}
+
 /**
  * Get a translation for a key in the current language
  * @param key The translation key
@@ -32,21 +48,26 @@ const translations: TranslationsType = {
  */
 export function t(
   key: string,
-  params?: Record<string, string | number>,
+  params?: Record<string, string | number>
 ): string {
-  const translation =
-    translations[currentLanguage][key] || translations.it[key] || key;
+  // cerca prima nella lingua corrente, poi in fallback italiano
+  let translation =
+    getNestedTranslation(translations[currentLanguage], key) ??
+    getNestedTranslation(translations.it, key);
 
-  if (!params) {
-    return translation;
+  if (!translation) {
+    // se proprio non lo trovi, torna la chiave
+    return key;
   }
 
-  // Simple interpolation
-  return Object.entries(params).reduce(
-    (str, [key, value]) =>
-      str.replace(new RegExp(`{${key}}`, "g"), String(value)),
-    translation,
-  );
+  if (params) {
+    return Object.entries(params).reduce(
+      (str, [k, v]) => str.replace(new RegExp(`{${k}}`, "g"), String(v)),
+      translation
+    );
+  }
+
+  return translation;
 }
 
 /**

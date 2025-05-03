@@ -81,7 +81,7 @@ export default function Dashboard() {
               ></path>
             </svg>
           }
-          linkText="View all items"
+          linkText={t("dashboard.viewAllItems")}
           linkHref="/inventory"
         />
 
@@ -106,7 +106,7 @@ export default function Dashboard() {
               ></path>
             </svg>
           }
-          linkText="View all loans"
+          linkText={t("dashboard.viewAllLoans")}
           linkHref="/loans"
         />
 
@@ -132,12 +132,12 @@ export default function Dashboard() {
               ></path>
             </svg>
           }
-          linkText="View overdue items"
+          linkText={t("dashboard.viewOverdueItems")}
           linkHref="/loans?filter=overdue"
         />
 
         <StatCard
-          title="New Items (30 days)"
+          title={t("dashboard.newItemsNdays")}
           value={statsLoading ? t("app.loading") : String(stats?.newItems || 0)}
           icon={
             <svg
@@ -155,7 +155,7 @@ export default function Dashboard() {
               ></path>
             </svg>
           }
-          linkText="View new items"
+          linkText={t("dashboard.viewNewItems")}
           linkHref="/inventory?filter=new"
         />
       </div>
@@ -196,8 +196,8 @@ export default function Dashboard() {
           linkHref="/qrcodes"
         />
         <QuickAction
-          title="Batch Processing"
-          description="Process multiple loans or returns at once"
+          title={t("dashboard.processBatch")}
+          description={t("dashboard.batchDescription")}
           icon={
             <svg
               className="h-6 w-6 text-gray-400"
@@ -214,13 +214,13 @@ export default function Dashboard() {
               ></path>
             </svg>
           }
-          linkText="Process batch"
+          linkText={t("dashboard.processBatch")}
           linkHref="/loans?batch=true"
         />
 
         <QuickAction
-          title="Run Reports"
-          description="Generate inventory reports and analytics"
+          title={t("dashboard.generateReports")}
+          description={t("dashboard.generateReportsDescription")}
           icon={
             <svg
               className="h-6 w-6 text-gray-400"
@@ -237,7 +237,7 @@ export default function Dashboard() {
               ></path>
             </svg>
           }
-          linkText="View reports"
+          linkText={t("dashboard.viewReports")}
           linkHref="/reports"
         />
       </div>
