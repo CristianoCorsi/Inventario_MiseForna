@@ -1,4 +1,5 @@
 {
+  "org.name": "MiseForna",
   "app.name": "Sistema di Gestione Inventario",
   "app.loading": "Caricamento...",
   "app.error": "Si è verificato un errore.",
@@ -36,15 +37,16 @@
 
   "confirmations.delete": "Sei sicuro di voler eliminare questo elemento?",
 
-  "nav.dashboard": "Cruscotto",
+  "nav.settingsTitle": "Impostazioni",
+  "nav.dashboard": "Dashboard",
   "nav.inventory": "Inventario",
   "nav.loans": "Prestiti",
-  "nav.qrcodes": "QR Code",
-  "nav.reports": "Rapporti",
-  "nav.settings": "Impostazioni",
-  "nav.admin": "Amministrazione",
+  "nav.qrcodes": "Codici QR",
+  "nav.reports": "Resoconti",
+  "nav.settings": "Impostazioni di sistema",
+  "nav.admin": "Gestione Utenti",
   "nav.profile": "Profilo",
-  "nav.logout": "Disconnetti",
+  "nav.logout": "Logout",
 
   "dashboard.title": "Dashboard",
   "dashboard.totalItems": "Articoli totali",

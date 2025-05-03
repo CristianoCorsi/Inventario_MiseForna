@@ -1,4 +1,5 @@
 {
+  "org.name": "MiseForna",
   "app.name": "Inventory Management System",
   "app.loading": "Loading...",
   "app.error": "An error occurred.",
@@ -36,6 +37,7 @@
   
   "confirmations.delete": "Are you sure you want to delete this item?",
 
+  "nav.settingsTitle": "Settings",
   "nav.dashboard": "Dashboard",
   "nav.inventory": "Inventory",
   "nav.loans": "Loans",
