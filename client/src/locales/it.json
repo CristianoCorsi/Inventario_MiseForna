@@ -103,6 +103,12 @@
     "viewOverdueItems": "Visualizza articoli in ritardo",
     "viewReports": "Visualizza resoconti"
   },
+  "header": {
+    "qrScan": "Scansione QR",
+    "qrScanComingSoon": "La funzionalità di scansione QR sarà implementata a breve.",
+    "searchNotImplemented": "Ricerca non ancora implementata",
+    "searchedFor": "Hai cercato: {term}"
+  },
   "inventory": {
     "actions": "Azioni",
     "add": "Aggiungi articolo",

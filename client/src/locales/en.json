@@ -103,6 +103,12 @@
     "viewOverdueItems": "View overdue items",
     "viewReports": "View Reports"
   },
+  "header": {
+    "qrScan": "QR Scan",
+    "qrScanComingSoon": "QR scanner functionality will be implemented soon.",
+    "searchNotImplemented": "Search not yet implemented",
+    "searchedFor": "You searched for: {term}"
+  },
   "inventory": {
     "actions": "Actions",
     "add": "Add Item",
