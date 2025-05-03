@@ -280,6 +280,34 @@ export default function Sidebar({
               {t("nav.admin")} {/* Added translation */}
             </Link>
           </div>
+
+          {/* Language switcher */}
+          <div className="mt-auto p-2 border-t border-gray-200">
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setLanguage("it")}
+                className={`w-6 h-4 transition-opacity ${currentLanguage === "it" ? "opacity-100" : "opacity-50 hover:opacity-75"}`}
+                title="Italiano"
+              >
+                <img
+                  src="https://flagcdn.com/w40/it.png"
+                  alt="Italiano"
+                  className="w-full h-full object-cover rounded"
+                />
+              </button>
+              <button
+                onClick={() => setLanguage("en")}
+                className={`w-6 h-4 transition-opacity ${currentLanguage === "en" ? "opacity-100" : "opacity-50 hover:opacity-75"}`}
+                title="English"
+              >
+                <img
+                  src="https://flagcdn.com/w40/gb.png"
+                  alt="English"
+                  className="w-full h-full object-cover rounded"
+                />
+              </button>
+            </div>
+          </div>
         </nav>
       </aside>
     </>
