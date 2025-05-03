@@ -21,19 +21,19 @@
   "app.generate": "Genera",
   "app.generating": "Generazione in corso...",
   "app.optional": "Opzionale",
-  
+
   "locations.createNew": "Crea nuova posizione",
   "locations.createdSuccess": "Posizione creata con successo",
   "locations.creationError": "Errore durante la creazione della posizione",
   "locations.deletedSuccess": "Posizione eliminata con successo",
   "locations.deletionError": "Errore durante l'eliminazione della posizione",
-  "locations.select": "Seleziona posizione",
-  
+  "locations.select": "Seleziona una posizione...",
+
   "notifications.success": "Successo",
   "notifications.error": "Errore",
   "notifications.warning": "Attenzione",
   "notifications.info": "Informazione",
-  
+
   "confirmations.delete": "Sei sicuro di voler eliminare questo elemento?",
 
   "nav.dashboard": "Cruscotto",

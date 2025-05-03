@@ -22,7 +22,7 @@ interface LocationAutoCompleteProps {
 export function LocationAutoComplete({
   value,
   onChange,
-  placeholder = "Seleziona posizione...",
+  placeholder = useTranslation().t("locations.select"),
   className,
   isRequired = false,
 }: LocationAutoCompleteProps) {
