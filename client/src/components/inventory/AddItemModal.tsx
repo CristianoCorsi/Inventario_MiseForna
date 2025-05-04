@@ -20,19 +20,11 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,16 +41,15 @@ export default function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
   const queryClient = useQueryClient();
   const [isImageUploading, setIsImageUploading] = useState(false);
   const { t } = useTranslation();
-  
+
   // Get QR code settings
   const { data: prefixSetting } = useQuery({
     queryKey: ["/api/settings/qrcode.prefix"],
   });
-  
   const { data: autoGenerateSetting } = useQuery({
     queryKey: ["/api/settings/qrcode.autoGenerate"],
   });
-  
+
   const form = useForm<InsertItem>({
     resolver: zodResolver(itemFormSchema),
     defaultValues: {
@@ -69,77 +60,70 @@ export default function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
       photoUrl: "",
       origin: "purchased",
       donorName: "",
-      status: "available"
-    }
-  });
-  
-  const createItemMutation = useMutation({
-    mutationFn: async (data: InsertItem) => {
-      return apiRequest("POST", "/api/items", data);
+      status: "available",
     },
+  });
+
+  const createItemMutation = useMutation({
+    mutationFn: async (data: InsertItem) =>
+      apiRequest("POST", "/api/items", data),
     onSuccess: () => {
       toast({
-        title: "Item created",
-        description: "The item has been successfully added to inventory."
+        title: t("toast.itemCreatedTitle"),
+        description: t("toast.itemCreatedDescription"),
       });
       queryClient.invalidateQueries({ queryKey: ["/api/items"] });
       form.reset();
       onClose();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create item",
-        variant: "destructive"
+        title: t("toast.errorTitle"),
+        description: error.message || t("toast.errorDescription"),
+        variant: "destructive",
       });
-    }
+    },
   });
-  
+
   const generateItemId = () => {
     const prefix = prefixSetting?.value || "ITEM-";
-    const newId = generateId(prefix);
-    form.setValue("itemId", newId);
+    form.setValue("itemId", generateId(prefix));
   };
-  
-  // Auto-generate ID when form is opened
+
   useState(() => {
-    if (isOpen && (autoGenerateSetting?.value === "true" || autoGenerateSetting?.value === undefined)) {
+    if (
+      isOpen &&
+      (autoGenerateSetting?.value === "true" ||
+        autoGenerateSetting?.value === undefined)
+    ) {
       generateItemId();
     }
   });
-  
-  const onSubmit = (data: InsertItem) => {
-    createItemMutation.mutate(data);
-  };
-  
-  // Mock file upload functionality
+
+  const onSubmit = (data: InsertItem) => createItemMutation.mutate(data);
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
-    // In a real app, we would upload the file to a server here
+
     setIsImageUploading(true);
-    
-    // Simulate upload delay
     setTimeout(() => {
       setIsImageUploading(false);
       toast({
-        title: "Image upload",
-        description: "Image upload feature will be implemented soon."
+        title: t("toast.imageUploadTitle"),
+        description: t("toast.imageUploadDescription"),
       });
     }, 1500);
   };
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">Add New Inventory Item</DialogTitle>
-          <DialogDescription>
-            Fill in the details below to add a new item to your inventory.
-          </DialogDescription>
+          <DialogTitle className="text-xl">{t("item.addTitle")}</DialogTitle>
+          <DialogDescription>{t("item.addDescription")}</DialogDescription>
         </DialogHeader>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -148,32 +132,38 @@ export default function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Item Name</FormLabel>
+                    <FormLabel>{t("item.name")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Power Drill XR200" {...field} />
+                      <Input
+                        placeholder={t("item.namePlaceholder")}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="itemId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Item ID</FormLabel>
+                    <FormLabel>{t("item.id")}</FormLabel>
                     <div className="flex">
                       <FormControl>
-                        <Input placeholder="e.g. TOOL-1234" {...field} />
+                        <Input
+                          placeholder={t("item.idPlaceholder")}
+                          {...field}
+                        />
                       </FormControl>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
+                      <Button
+                        type="button"
+                        variant="outline"
                         className="ml-2"
                         onClick={generateItemId}
                       >
-                        Generate
+                        {t("item.generate")}
                       </Button>
                     </div>
                     <FormMessage />
@@ -181,16 +171,16 @@ export default function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
                 )}
               />
             </div>
-            
+
             <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>{t("item.description")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Enter item description..."
+                      placeholder={t("item.descriptionPlaceholder")}
                       className="resize-none"
                       {...field}
                     />
@@ -199,14 +189,14 @@ export default function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="location"
               render={({ field }) => (
                 <FormItem>
                   <div className="flex items-center justify-between">
-                    <FormLabel>Storage Location</FormLabel>
+                    <FormLabel>{t("item.location")}</FormLabel>
                     <span className="text-xs text-muted-foreground">
                       {t("app.optional")}
                     </span>
@@ -223,45 +213,59 @@ export default function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
                 </FormItem>
               )}
             />
-            
+
             <div>
-              <Label className="block text-sm font-medium text-gray-700">Item Photo</Label>
+              <Label className="block text-sm font-medium text-gray-700">
+                {t("item.photo")}
+              </Label>
               <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                 <div className="space-y-1 text-center">
-                  <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <svg
+                    className="mx-auto h-12 w-12 text-gray-400"
+                    stroke="currentColor"
+                    fill="none"
+                    viewBox="0 0 48 48"
+                  >
+                    <path
+                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                   <div className="flex text-sm text-gray-600">
                     <label
                       htmlFor="file-upload"
-                      className="relative cursor-pointer bg-white rounded-md font-medium text-secondary hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-secondary"
+                      className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-secondary"
                     >
-                      <span>Upload a file</span>
-                      <input 
-                        id="file-upload" 
-                        name="file-upload" 
-                        type="file" 
+                      <span>{t("item.uploadFile")}</span>
+                      <input
+                        id="file-upload"
+                        name="file-upload"
+                        type="file"
                         className="sr-only"
                         onChange={handleFileUpload}
                         accept="image/*"
                       />
                     </label>
-                    <p className="pl-1">or drag and drop</p>
+                    <p className="pl-1">{t("item.dragDrop")}</p>
                   </div>
-                  <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                  <p className="text-xs text-gray-500">{t("item.imageNote")}</p>
                   {isImageUploading && (
-                    <div className="mt-2 text-xs text-primary">Uploading image...</div>
+                    <div className="mt-2 text-xs text-primary">
+                      {t("item.uploading")}
+                    </div>
                   )}
                 </div>
               </div>
             </div>
-            
+
             <FormField
               control={form.control}
               name="origin"
               render={({ field }) => (
                 <FormItem className="space-y-1">
-                  <FormLabel>Item Origin</FormLabel>
+                  <FormLabel>{t("item.origin")}</FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -269,16 +273,25 @@ export default function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
                       className="flex flex-col space-y-1"
                     >
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="purchased" id="origin-purchased" />
-                        <Label htmlFor="origin-purchased">Purchased</Label>
+                        <RadioGroupItem
+                          value="purchased"
+                          id="origin-purchased"
+                        />
+                        <Label htmlFor="origin-purchased">
+                          {t("item.originPurchased")}
+                        </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="donated" id="origin-donated" />
-                        <Label htmlFor="origin-donated">Donated</Label>
+                        <Label htmlFor="origin-donated">
+                          {t("item.originDonated")}
+                        </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="other" id="origin-other" />
-                        <Label htmlFor="origin-other">Other</Label>
+                        <Label htmlFor="origin-other">
+                          {t("item.originOther")}
+                        </Label>
                       </div>
                     </RadioGroup>
                   </FormControl>
@@ -286,36 +299,35 @@ export default function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
                 </FormItem>
               )}
             />
-            
-            {(form.watch("origin") === "donated" || form.watch("origin") === "other") && (
+
+            {(form.watch("origin") === "donated" ||
+              form.watch("origin") === "other") && (
               <FormField
                 control={form.control}
                 name="donorName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Donor/Source Name</FormLabel>
+                    <FormLabel>{t("item.donorName")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter donor or source name" {...field} />
+                      <Input
+                        placeholder={t("item.donorNamePlaceholder")}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             )}
-            
+
             <DialogFooter className="pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-              >
-                Cancel
+              <Button type="button" variant="outline" onClick={onClose}>
+                {t("app.cancel")}
               </Button>
-              <Button 
-                type="submit"
-                disabled={createItemMutation.isPending}
-              >
-                {createItemMutation.isPending ? "Adding..." : "Add Item"}
+              <Button type="submit" disabled={createItemMutation.isPending}>
+                {createItemMutation.isPending
+                  ? t("item.adding")
+                  : t("item.add")}
               </Button>
             </DialogFooter>
           </form>

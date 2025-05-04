@@ -49,7 +49,8 @@
     "optional": "Opzionale",
     "print": "Stampa",
     "save": "Salva",
-    "search": "Cerca"
+    "search": "Cerca",
+    "select": "Seleziona"
   },
   "auth": {
     "accountCreated": "Il tuo account è stato creato",
@@ -126,6 +127,12 @@
   },
   "item": {
     "activityHistory": "Cronologia attività",
+    "add": "Aggiungi articolo",
+    "addDescription": "Compila i dati sottostanti per aggiungere un nuovo articolo al tuo inventario.",
+    "addTitle": "Aggiungi un nuovo articolo all'inventario",
+    "adding": "Sto aggiungendo...",
+    "description": "Descrizione",
+    "descriptionPlaceholder": "Inserisci una descrizione dell'articolo...",
     "details": {
       "category": "Categoria",
       "id": "ID",
@@ -137,13 +144,31 @@
       "status": "Stato",
       "title": "Dettagli articolo",
       "value": "Valore"
-    }
+    },
+    "donorName": "Nome del donatore / provenienza",
+    "donorNamePlaceholder": "Inserisci il nome del donatore o della provenienza",
+    "dragDrop": "o trascina qui sopra",
+    "generate": "Genera",
+    "id": "ID dell'articolo",
+    "idPlaceholder": "i.e. ITEM-1234",
+    "imageNote": "PNG, JPG, GIF fino a 10MB",
+    "location": "Posizione nello stoccaggio",
+    "name": "Nome Articolo",
+    "namePlaceholder": "i.e. Sedia Bella",
+    "origin": "Origine dell'articolo",
+    "originDonated": "Donato",
+    "originOther": "Altro",
+    "originPurchased": "Acquistato",
+    "photo": "Foto Articolo",
+    "uploadFile": "Carica un file",
+    "uploading": "Sto caricando l'immagine..."
   },
   "loans": {
     "active": "Prestiti attivi",
     "batch": "Elaborazione in blocco",
     "borrower": "Richiedente",
     "create": "Crea prestito",
+    "dueDate": "Data di scadenza del prestito",
     "email": "Email",
     "extend": "Estendi prestito",
     "history": "Cronologia prestiti",
@@ -151,6 +176,10 @@
     "overdue": "Prestiti in ritardo",
     "phone": "Telefono",
     "return": "Registra restituzione",
+    "returnDate": "Data di restituzione del prestito",
+    "status": {
+      "returned": "Prestiti Restituiti"
+    },
     "title": "Prestiti"
   },
   "locations": {
@@ -359,6 +388,14 @@
       "status": "Stato",
       "total": "Totale"
     }
+  },
+  "toast": {
+    "errorDescription": "Errore nella creazione dell'articolo",
+    "errorTitle": "Errore",
+    "imageUploadDescription": "L'upload di immagini sarà implementato presto.",
+    "imageUploadTitle": "Immagine caricata",
+    "itemCreatedDescription": "L'articolo è stato aggiunto all'inventario.",
+    "itemCreatedTitle": "Articolo creato"
   },
   "validation": {
     "email": "Email non valida",

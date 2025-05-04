@@ -49,7 +49,8 @@
     "optional": "Optional",
     "print": "Print",
     "save": "Save",
-    "search": "Search"
+    "search": "Search",
+    "select": "Select"
   },
   "auth": {
     "accountCreated": "Your account has been succesfully created",
@@ -126,6 +127,12 @@
   },
   "item": {
     "activityHistory": "Activity History",
+    "add": "Add Item",
+    "addDescription": "Fill in the details below to add a new item to your inventory.",
+    "addTitle": "Add New Inventory Item",
+    "adding": "Adding...",
+    "description": "Description",
+    "descriptionPlaceholder": "Enter item description...",
     "details": {
       "category": "Category",
       "id": "ID",
@@ -137,13 +144,31 @@
       "status": "Status",
       "title": "Item Details",
       "value": "Value"
-    }
+    },
+    "donorName": "Donor/Source Name",
+    "donorNamePlaceholder": "Enter donor or source name",
+    "dragDrop": "or drag and drop",
+    "generate": "Generate",
+    "id": "Item ID",
+    "idPlaceholder": "e.g. TOOL-1234",
+    "imageNote": "PNG, JPG, GIF up to 10MB",
+    "location": "Storage Location",
+    "name": "Item Name",
+    "namePlaceholder": "e.g. Power Drill XR200",
+    "origin": "Item Origin",
+    "originDonated": "Donated",
+    "originOther": "Other",
+    "originPurchased": "Purchased",
+    "photo": "Item Photo",
+    "uploadFile": "Upload a file",
+    "uploading": "Uploading image..."
   },
   "loans": {
     "active": "Active Loans",
     "batch": "Batch Processing",
     "borrower": "Borrower",
     "create": "Create Loan",
+    "dueDate": "Loan due date",
     "email": "Email",
     "extend": "Extend Loan",
     "history": "Loan History",
@@ -151,6 +176,10 @@
     "overdue": "Overdue Loans",
     "phone": "Phone",
     "return": "Record Return",
+    "returnDate": "Loan return date",
+    "status": {
+      "returned": "Returned Loans"
+    },
     "title": "Loans"
   },
   "locations": {
@@ -359,6 +388,14 @@
       "status": "Status",
       "total": "Total"
     }
+  },
+  "toast": {
+    "errorDescription": "Failed to create item",
+    "errorTitle": "Error",
+    "imageUploadDescription": "Image upload feature will be implemented soon.",
+    "imageUploadTitle": "Image upload",
+    "itemCreatedDescription": "The item has been successfully added to inventory.",
+    "itemCreatedTitle": "Item created"
   },
   "validation": {
     "email": "Invalid email",
