@@ -483,17 +483,17 @@ export class MemStorage implements IStorage {
     return newUser;
   }
 
-  async updateUser(
-    id: number,
-    user: Partial<InsertUser>,
-  ): Promise<User | undefined> {
-    const existingUser = this.users.get(id);
-    if (!existingUser) return undefined;
-
-    const updatedUser = { ...existingUser, ...user };
-    this.users.set(id, updatedUser);
-    return updatedUser;
-  }
+  //  async updateUser(
+  //    id: number,
+  //    user: Partial<InsertUser>,
+  //  ): Promise<User | undefined> {
+  //    const existingUser = this.users.get(id);
+  //    if (!existingUser) return undefined;
+  //
+  //    const updatedUser = { ...existingUser, ...user };
+  //    this.users.set(id, updatedUser);
+  //    return updatedUser;
+  //  }
 
   async deleteUser(id: number): Promise<boolean> {
     return this.users.delete(id);
@@ -555,13 +555,13 @@ export class DatabaseStorage implements IStorage {
   // Item methods
   async getItems(): Promise<Item[]> {
     try {
-      const { dbSelect } = await import('./drizzleHelpers');
+      const { dbSelect } = await import("./drizzleHelpers");
       return await dbSelect<Item>(
-        items, 
+        items,
         undefined,
-        ['purchaseDate', 'warrantyExpires', 'maintenanceDate', 'lastUpdated'], // campi data
+        ["purchaseDate", "warrantyExpires", "maintenanceDate", "lastUpdated"], // campi data
         [], // campi booleani
-        ['metadata'] // campi JSON
+        ["metadata"], // campi JSON
       );
     } catch (error) {
       console.error("Error in getItems:", error);
@@ -571,14 +571,14 @@ export class DatabaseStorage implements IStorage {
 
   async getItem(id: number): Promise<Item | undefined> {
     try {
-      const { dbSelectById } = await import('./drizzleHelpers');
+      const { dbSelectById } = await import("./drizzleHelpers");
       return await dbSelectById<Item>(
-        items, 
-        items.id, 
+        items,
+        items.id,
         id,
-        ['purchaseDate', 'warrantyExpires', 'maintenanceDate', 'lastUpdated'], // campi data
+        ["purchaseDate", "warrantyExpires", "maintenanceDate", "lastUpdated"], // campi data
         [], // campi booleani
-        ['metadata'] // campi JSON
+        ["metadata"], // campi JSON
       );
     } catch (error) {
       console.error("Error in getItem:", error);
@@ -663,13 +663,13 @@ export class DatabaseStorage implements IStorage {
   // Loan methods
   async getLoans(): Promise<Loan[]> {
     try {
-      const { dbSelect } = await import('./drizzleHelpers');
+      const { dbSelect } = await import("./drizzleHelpers");
       return await dbSelect<Loan>(
-        loans, 
+        loans,
         undefined,
-        ['dueDate', 'loanDate', 'returnDate'], // campi data
+        ["dueDate", "loanDate", "returnDate"], // campi data
         [], // campi booleani
-        ['metadata'] // campi JSON
+        ["metadata"], // campi JSON
       );
     } catch (error) {
       console.error("Error in getLoans:", error);
@@ -679,14 +679,14 @@ export class DatabaseStorage implements IStorage {
 
   async getLoan(id: number): Promise<Loan | undefined> {
     try {
-      const { dbSelectById } = await import('./drizzleHelpers');
+      const { dbSelectById } = await import("./drizzleHelpers");
       return await dbSelectById<Loan>(
-        loans, 
-        loans.id, 
+        loans,
+        loans.id,
         id,
-        ['dueDate', 'loanDate', 'returnDate'], // campi data
+        ["dueDate", "loanDate", "returnDate"], // campi data
         [], // campi booleani
-        ['metadata'] // campi JSON
+        ["metadata"], // campi JSON
       );
     } catch (error) {
       console.error("Error in getLoan:", error);
@@ -696,17 +696,20 @@ export class DatabaseStorage implements IStorage {
 
   async getLoansByItemId(itemId: number): Promise<Loan[]> {
     try {
-      const { convertFromDb } = await import('./dbUtils');
-      const results = await db.select().from(loans).where(eq(loans.itemId, itemId));
-      
+      const { convertFromDb } = await import("./dbUtils");
+      const results = await db
+        .select()
+        .from(loans)
+        .where(eq(loans.itemId, itemId));
+
       // Converti tutti i risultati nel formato appropriato
-      return results.map(loan => 
+      return results.map((loan) =>
         convertFromDb(
           loan,
-          ['dueDate', 'loanDate', 'returnDate'], // campi data
+          ["dueDate", "loanDate", "returnDate"], // campi data
           [], // campi booleani
-          ['metadata'] // campi JSON
-        )
+          ["metadata"], // campi JSON
+        ),
       );
     } catch (error) {
       console.error("Error in getLoansByItemId:", error);
@@ -716,27 +719,27 @@ export class DatabaseStorage implements IStorage {
 
   async getOverdueLoans(): Promise<Loan[]> {
     try {
-      const { convertFromDb, dateToDb } = await import('./dbUtils');
-      
+      const { convertFromDb, dateToDb } = await import("./dbUtils");
+
       // Converti la data nel formato adatto al database
       const now = dateToDb(new Date());
-      
+
       // Usa SQL raw per evitare problemi di binding
       const statement = sqlite.prepare(`
         SELECT * FROM loans 
         WHERE status = ? AND due_date < ?
       `);
-      
+
       const results = statement.all("active", now);
-      
+
       // Converti tutti i risultati nel formato appropriato
-      return results.map(loan => 
+      return results.map((loan) =>
         convertFromDb(
           loan,
-          ['dueDate', 'loanDate', 'returnDate'], // campi data
+          ["dueDate", "loanDate", "returnDate"], // campi data
           [], // campi booleani
-          ['metadata'] // campi JSON
-        )
+          ["metadata"], // campi JSON
+        ),
       );
     } catch (error) {
       console.error("Error in getOverdueLoans:", error);
@@ -747,20 +750,20 @@ export class DatabaseStorage implements IStorage {
 
   async getActiveLoans(): Promise<Loan[]> {
     try {
-      const { convertFromDb } = await import('./dbUtils');
+      const { convertFromDb } = await import("./dbUtils");
       const results = await db
         .select()
         .from(loans)
         .where(or(eq(loans.status, "active"), eq(loans.status, "overdue")));
-      
+
       // Converti tutti i risultati nel formato appropriato
-      return results.map(loan => 
+      return results.map((loan) =>
         convertFromDb(
           loan,
-          ['dueDate', 'loanDate', 'returnDate'], // campi data
+          ["dueDate", "loanDate", "returnDate"], // campi data
           [], // campi booleani
-          ['metadata'] // campi JSON
-        )
+          ["metadata"], // campi JSON
+        ),
       );
     } catch (error) {
       console.error("Error in getActiveLoans:", error);
@@ -980,54 +983,51 @@ export class DatabaseStorage implements IStorage {
 
   // User management methods
   async getUsers(): Promise<User[]> {
-    const { dbSelect } = await import('./drizzleHelpers');
+    const { dbSelect } = await import("./drizzleHelpers");
     return await dbSelect<User>(
-      users, 
+      users,
       undefined,
-      ['lastLogin', 'createdAt'], // campi data
-      ['isActive'],               // campi booleani 
-      ['preferences']             // campi JSON
+      ["lastLogin", "createdAt"], // campi data
+      ["isActive"], // campi booleani
+      ["preferences"], // campi JSON
     );
   }
 
   async getUser(id: number): Promise<User | undefined> {
     try {
-      const { dbSelectById } = await import('./drizzleHelpers');
+      const { dbSelectById } = await import("./drizzleHelpers");
       return await dbSelectById<User>(
-        users, 
-        users.id, 
+        users,
+        users.id,
         id,
-        ['createdAt'],  // rimuoviamo lastLogin dai campi data
-        ['isActive'],   // campi booleani
-        ['preferences'] // campi JSON
+        ["createdAt"], // rimuoviamo lastLogin dai campi data
+        ["isActive"], // campi booleani
+        ["preferences"], // campi JSON
       );
     } catch (error) {
       console.error("Error in getUser:", error);
       // Utilizzo una query fallback più robusta
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, id));
+      const [user] = await db.select().from(users).where(eq(users.id, id));
       return user as User | undefined;
     }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
-      const { convertFromDb } = await import('./dbUtils');
+      const { convertFromDb } = await import("./dbUtils");
       const [userRecord] = await db
         .select()
         .from(users)
         .where(eq(users.username, username));
-      
+
       if (!userRecord) return undefined;
-      
+
       // Converti i campi nel formato corretto, ma rimuoviamo lastLogin
       return convertFromDb(
         userRecord,
-        ['createdAt'],        // rimuoviamo lastLogin dai campi data
-        ['isActive'],         // campi booleani
-        ['preferences']       // campi JSON
+        ["createdAt"], // rimuoviamo lastLogin dai campi data
+        ["isActive"], // campi booleani
+        ["preferences"], // campi JSON
       );
     } catch (error) {
       console.error("Error in getUserByUsername:", error);
@@ -1041,12 +1041,14 @@ export class DatabaseStorage implements IStorage {
     console.log("Creating user with data:", JSON.stringify(user));
 
     try {
-      const { jsonToDb, booleanToDb } = await import('./dbUtils');
-      
+      const { jsonToDb, booleanToDb } = await import("./dbUtils");
+
       // Prepara i dati per SQLite
       const preferences = jsonToDb(user.preferences);
-      const isActive = booleanToDb(user.isActive === undefined ? true : user.isActive);
-      
+      const isActive = booleanToDb(
+        user.isActive === undefined ? true : user.isActive,
+      );
+
       // Inserimento con metodo raw SQL per evitare problemi di binding
       const result = sqlite
         .prepare(
@@ -1063,7 +1065,7 @@ export class DatabaseStorage implements IStorage {
           user.fullName || null,
           user.role || "staff",
           isActive,
-          preferences
+          preferences,
         );
 
       // Recupera l'utente appena creato
@@ -1083,15 +1085,9 @@ export class DatabaseStorage implements IStorage {
     user: Partial<InsertUser>,
   ): Promise<User | undefined> {
     try {
-      const { dbUpdate } = await import('./drizzleHelpers');
+      const { dbUpdate } = await import("./drizzleHelpers");
       // Aggiorna l'utente con i dati convertiti correttamente
-      return await dbUpdate<User>(
-        users,
-        users.id,
-        id,
-        user,
-        true
-      );
+      return await dbUpdate<User>(users, users.id, id, user, true);
     } catch (error) {
       console.error("Error in updateUser:", error);
       throw error;
@@ -1100,7 +1096,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: number): Promise<boolean> {
     try {
-      const { dbDelete } = await import('./drizzleHelpers');
+      const { dbDelete } = await import("./drizzleHelpers");
       // Elimina l'utente con ID
       return await dbDelete(users, users.id, id);
     } catch (error) {
@@ -1123,7 +1119,7 @@ export class DatabaseStorage implements IStorage {
       if (!user) {
         return undefined;
       }
-      
+
       // Non aggiornare lastLogin se la colonna non esiste nel database
       // Questo rimuove temporaneamente l'aggiornamento ma permette il login
       return user;
