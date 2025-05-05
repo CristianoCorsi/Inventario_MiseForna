@@ -297,6 +297,7 @@
       "loanSummary": "Riepilogo prestiti"
     },
     "dateRange": "Intervallo date",
+    "dateRangeDays": "Ultimi {days} giorni",
     "description": {
       "activity": "Andamento delle attività negli ultimi {days} giorni",
       "inventory": "Panoramica dello stato attuale dell'inventario e della distribuzione",

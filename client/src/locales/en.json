@@ -297,6 +297,7 @@
       "loanSummary": "Loan Summary"
     },
     "dateRange": "Date Range",
+    "dateRangeDays": "Last {days} days",
     "description": {
       "activity": "Activity trends over the last {days} days",
       "inventory": "Overview of current inventory status and distribution",
