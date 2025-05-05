@@ -65,6 +65,7 @@
     "loginButton": "Login",
     "loginError": "Login error",
     "loginSuccess": "Login success",
+    "logout": "Logout",
     "logoutError": "Error during logout",
     "logoutSuccess": "Logged out successfully",
     "password": "Password",

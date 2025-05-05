@@ -65,6 +65,7 @@
     "loginButton": "Accedi",
     "loginError": "Errore di accesso",
     "loginSuccess": "Accesso effettuato",
+    "logout": "Logout",
     "logoutError": "Errore durante la disconnessione",
     "logoutSuccess": "Disconnesso con successo",
     "password": "Password",
