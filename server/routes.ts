@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -12,7 +12,6 @@ import {
   qrCodeFormSchema
 } from "@shared/schema";
 import { z } from "zod";
-import path from "path";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
 import { DOMImplementation, XMLSerializer } from "xmldom";
