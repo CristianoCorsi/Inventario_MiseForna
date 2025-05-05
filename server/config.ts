@@ -1,9 +1,7 @@
-import dotenv from 'dotenv';
+// carica .env una sola volta
+import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
-
-// Carica le variabili d'ambiente dal file .env
-dotenv.config();
 
 // Tipo di database supportati
 export type DatabaseType = 'sqlite' | 'postgres' | 'mysql' | 'mssql';
@@ -61,6 +59,10 @@ export function getConfig(): AppConfig {
     defaultLanguage: process.env.DEFAULT_LANGUAGE || DEFAULT_CONFIG.defaultLanguage,
     forceItalian: process.env.FORCE_ITALIAN === 'true' || DEFAULT_CONFIG.forceItalian
   };
+
+  
+
+  console.log(process.env)
 
   return config;
 }
@@ -128,6 +130,7 @@ function getDatabaseConfig(): DatabaseConfig {
  * Aggiorna il file .env con le nuove configurazioni del database
  * @param dbConfig Configurazione del database da salvare
  */
+// TODO: questa funzione non viene mai usata -> si può cancellare
 export async function updateDatabaseConfig(dbConfig: DatabaseConfig): Promise<boolean> {
   try {
     // Percorso del file .env
@@ -343,7 +346,6 @@ export async function updateDatabaseConfig(dbConfig: DatabaseConfig): Promise<bo
         delete process.env[key];
       }
     });
-    dotenv.config();
     
     return true;
   } catch (error) {
@@ -354,3 +356,4 @@ export async function updateDatabaseConfig(dbConfig: DatabaseConfig): Promise<bo
 
 // Esporta le configurazioni
 export const config = getConfig();
+console.log(config)
