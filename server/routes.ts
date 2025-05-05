@@ -15,11 +15,9 @@ import { z } from "zod";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
 import { DOMImplementation, XMLSerializer } from "xmldom";
-import { setupAuth, isAuthenticated, isAdmin } from "./auth";
+import { isAuthenticated, isAdmin } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Set up authentication routes and middleware
-  setupAuth(app);
   // API Routes
   const apiRouter = app.route('/api');
   
@@ -29,7 +27,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(items);
   });
   
-  app.get('/api/items/:id', async (req, res) => {
+  app.get('/api/items/:id', isAuthenticated, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID format" });
@@ -43,7 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(item);
   });
   
-  app.get('/api/items/code/:itemId', async (req, res) => {
+  app.get('/api/items/code/:itemId', isAuthenticated, async (req, res) => {
     const itemId = req.params.itemId;
     const item = await storage.getItemByItemId(itemId);
     
@@ -107,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put('/api/items/:id', async (req, res) => {
+  app.put('/api/items/:id', isAuthenticated, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID format" });
@@ -157,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete('/api/items/:id', async (req, res) => {
+  app.delete('/api/items/:id', isAuthenticated, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID format" });
@@ -194,12 +192,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Location routes
-  app.get('/api/locations', async (req, res) => {
+  app.get('/api/locations', isAuthenticated, async (req, res) => {
     const locations = await storage.getLocations();
     res.json(locations);
   });
   
-  app.get('/api/locations/:id', async (req, res) => {
+  app.get('/api/locations/:id', isAuthenticated, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID format" });
@@ -213,7 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(location);
   });
   
-  app.post('/api/locations', async (req, res) => {
+  app.post('/api/locations', isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertLocationSchema.parse(req.body);
       const newLocation = await storage.createLocation(validatedData);
@@ -226,7 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put('/api/locations/:id', async (req, res) => {
+  app.put('/api/locations/:id', isAuthenticated, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID format" });
@@ -249,7 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete('/api/locations/:id', async (req, res) => {
+  app.delete('/api/locations/:id', isAuthenticated, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID format" });
@@ -281,22 +279,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Loan routes
-  app.get('/api/loans', async (req, res) => {
+  app.get('/api/loans', isAuthenticated, async (req, res) => {
     const loans = await storage.getLoans();
     res.json(loans);
   });
   
-  app.get('/api/loans/overdue', async (req, res) => {
+  app.get('/api/loans/overdue', isAuthenticated, async (req, res) => {
     const overdueLoans = await storage.getOverdueLoans();
     res.json(overdueLoans);
   });
   
-  app.get('/api/loans/active', async (req, res) => {
+  app.get('/api/loans/active', isAuthenticated, async (req, res) => {
     const activeLoans = await storage.getActiveLoans();
     res.json(activeLoans);
   });
   
-  app.get('/api/loans/item/:itemId', async (req, res) => {
+  app.get('/api/loans/item/:itemId', isAuthenticated, async (req, res) => {
     const itemId = parseInt(req.params.itemId);
     if (isNaN(itemId)) {
       return res.status(400).json({ message: "Invalid item ID format" });
@@ -306,7 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(loans);
   });
   
-  app.post('/api/loans', async (req, res) => {
+  app.post('/api/loans', isAuthenticated, async (req, res) => {
     try {
       const validatedData = loanFormSchema.parse(req.body);
       
@@ -345,7 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put('/api/loans/:id/return', async (req, res) => {
+  app.put('/api/loans/:id/return', isAuthenticated, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID format" });
@@ -383,13 +381,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Activity routes
-  app.get('/api/activities', async (req, res) => {
+  app.get('/api/activities', isAuthenticated, async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
     const activities = await storage.getActivities(limit);
     res.json(activities);
   });
   
-  app.get('/api/activities/item/:itemId', async (req, res) => {
+  app.get('/api/activities/item/:itemId', isAuthenticated, async (req, res) => {
     const itemId = parseInt(req.params.itemId);
     if (isNaN(itemId)) {
       return res.status(400).json({ message: "Invalid item ID format" });
@@ -400,7 +398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Stats for dashboard
-  app.get('/api/stats', async (req, res) => {
+  app.get('/api/stats', isAuthenticated, async (req, res) => {
     const items = await storage.getItems();
     const activeLoans = await storage.getActiveLoans();
     const overdueLoans = await storage.getOverdueLoans();
@@ -421,7 +419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Settings routes
-  app.get('/api/settings/:key', async (req, res) => {
+  app.get('/api/settings/:key', isAuthenticated, async (req, res) => {
     const key = req.params.key;
     const setting = await storage.getSetting(key);
     
@@ -432,7 +430,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(setting);
   });
   
-  app.post('/api/settings/:key', async (req, res) => {
+  app.post('/api/settings/:key', isAuthenticated, async (req, res) => {
     const key = req.params.key;
     const { value } = req.body;
     
@@ -445,17 +443,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // QR Code routes
-  app.get('/api/qrcodes', async (req, res) => {
+  app.get('/api/qrcodes', isAuthenticated, async (req, res) => {
     const qrCodes = await storage.getQrCodes();
     res.json(qrCodes);
   });
   
-  app.get('/api/qrcodes/unassigned', async (req, res) => {
+  app.get('/api/qrcodes/unassigned', isAuthenticated, async (req, res) => {
     const qrCodes = await storage.getUnassignedQrCodes();
     res.json(qrCodes);
   });
   
-  app.get('/api/qrcodes/code/:qrCodeId', async (req, res) => {
+  app.get('/api/qrcodes/code/:qrCodeId', isAuthenticated, async (req, res) => {
     const qrCodeId = req.params.qrCodeId;
     const qrCode = await storage.getQrCodeByCodeId(qrCodeId);
     
@@ -466,7 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(qrCode);
   });
   
-  app.get('/api/qrcodes/:id', async (req, res) => {
+  app.get('/api/qrcodes/:id', isAuthenticated, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid ID format" });
@@ -480,7 +478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(qrCode);
   });
   
-  app.post('/api/qrcodes', async (req, res) => {
+  app.post('/api/qrcodes', isAuthenticated, async (req, res) => {
     try {
       const validatedData = qrCodeFormSchema.parse(req.body);
       console.log("Creating QR code with data:", validatedData);
@@ -503,7 +501,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post('/api/qrcodes/batch', async (req, res) => {
+  app.post('/api/qrcodes/batch', isAuthenticated, async (req, res) => {
     try {
       const { prefix, quantity, description } = req.body;
       console.log("Creating batch QR codes:", { prefix, quantity, description });
@@ -542,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post('/api/qrcodes/associate', async (req, res) => {
+  app.post('/api/qrcodes/associate', isAuthenticated, async (req, res) => {
     try {
       const { qrCodeId, itemId } = req.body;
       console.log("Associating QR code:", { qrCodeId, itemId });
@@ -583,7 +581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Batch processing
-  app.post('/api/batch/loans', async (req, res) => {
+  app.post('/api/batch/loans', isAuthenticated, async (req, res) => {
     const { itemIds, borrowerInfo, dueDate } = req.body;
     
     if (!Array.isArray(itemIds) || itemIds.length === 0) {
@@ -654,7 +652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ results, errors });
   });
   
-  app.post('/api/batch/returns', async (req, res) => {
+  app.post('/api/batch/returns', isAuthenticated, async (req, res) => {
     const { loanIds, returnDate, condition } = req.body;
     
     if (!Array.isArray(loanIds) || loanIds.length === 0) {

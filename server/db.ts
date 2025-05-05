@@ -4,9 +4,6 @@ import path from 'path';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import { Pool } from '@neondatabase/serverless';
-import session from 'express-session';
-import SqliteStore from 'better-sqlite3-session-store';
-import connectPg from 'connect-pg-simple';
 
 /**
  * Crea la directory dei dati per SQLite
@@ -137,15 +134,6 @@ export async function initializeDatabase() {
     throw error;
   }
 }
-
-// Usa memorystore per le sessioni (più affidabile e non ha problemi di compatibilità)
-import createMemoryStore from "memorystore";
-const MemoryStore = createMemoryStore(session);
-
-// Usa lo store in memoria per le sessioni evitando completamente il database SQLite
-export const sessionStore = new MemoryStore({
-  checkPeriod: 24 * 60 * 60 * 1000 // Cancella sessioni scadute ogni 24 ore
-});
 
 // Configura pool di connessione per PostgreSQL (usato solo se PostgreSQL è attivo)
 let pool: any = null;
