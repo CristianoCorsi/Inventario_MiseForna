@@ -1,178 +1,213 @@
-
 # Sistema di Gestione Inventario - Misericordia di Fornacette
 
-Un'applicazione web per la gestione dell'inventario con supporto per codici QR, prestiti e reporting, sviluppata specificamente per le esigenze della Misericordia di Fornacette.
+Applicazione web per la gestione dell'inventario con supporto per codici QR, prestiti e reporting, sviluppata per le esigenze della Misericordia di Fornacette.
 
-## Requisiti
+## Installazione e Configurazione
 
-- Node.js 20.x o superiore
-- SQLite 3.x (incluso come dipendenza, non richiede installazione separata)
-- Sistemi operativi supportati: Windows, macOS, Linux
+1.  **Clonare il Repository:**
+    ```bash
+    git clone <URL_DEL_REPOSITORY>
+    cd <NOME_DEL_PROGETTO> # Es: cd Inventario_MiseForna
+    ```
 
-## Configurazione Ambiente di Sviluppo (Locale)
+2.  **Installare le Dipendenze:**
+    Questo comando installa tutte le librerie necessarie per il frontend e il backend.
+    ```bash
+    npm install
+    ```
 
-1. **Clona il repository**:
-   ```bash
-   git clone <URL_DEL_REPOSITORY>
-   cd <NOME_REPOSITORY>
-   ```
+3.  **Configurare le Variabili d'Ambiente:**
+    Copia il file di esempio `.env.example` in un nuovo file chiamato `.env` nella root del progetto.
+    * Su Windows:
+        ```cmd
+        copy .env.example .env
+        ```
+    * Su macOS/Linux:
+        ```bash
+        cp .env.example .env
+        ```
+    Modifica il file `.env` se necessario. Le impostazioni predefinite usano SQLite:
+    ```dotenv
+    # Tipo di database (mantenere sqlite per ora)
+    DB_TYPE=sqlite
+    # Percorso del file database SQLite (verrà creato se non esiste)
+    SQLITE_DB_PATH=data/inventory.db
 
-2. **Installa le dipendenze**:
-   ```bash
-   npm install
-   ```
+    # Chiave segreta per le sessioni utente (CAMBIARE IN PRODUZIONE!)
+    SESSION_SECRET=secret-key-change-me-in-production
 
-3. **Configura le variabili d'ambiente**:
-   Copia il file `.env.example` in un nuovo file `.env`:
-   
-   Per Windows:
-   ```cmd
-   copy .env.example .env
-   ```
-   
-   Per macOS/Linux:
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Il file `.env` contiene già le configurazioni predefinite per utilizzare SQLite.
+    # Impostazioni Cookie (false in sviluppo locale HTTP)
+    COOKIE_SECURE=false
 
-4. **Avvia l'applicazione in modalità sviluppo**:
-   
-   Per Windows:
-   ```cmd
-   .\dev-win.bat
-   ```
-   
-   Per macOS/Linux:
-   ```bash
-   # Rendi lo script eseguibile
-   chmod +x ./dev.sh
-   # Esegui lo script
-   ./dev.sh
-   ```
+    # Porta del server
+    PORT=5000
 
-   L'applicazione sarà disponibile all'indirizzo `http://localhost:5000`.
+    # Host (0.0.0.0 per accessibilità in rete locale)
+    HOST=0.0.0.0
+
+    # Lingua (opzionale)
+    # DEFAULT_LANGUAGE=it
+    # FORCE_ITALIAN=true
+    ```
+    **Importante:** Cambia `SESSION_SECRET` con una stringa lunga e casuale per l'ambiente di produzione.
+
+## Utilizzo in Ambiente di Sviluppo
+
+1.  **Preparare il Database (Prima Esecuzione / Modifiche Schema):**
+    * **Configura Drizzle Kit:** Assicurati che il file `drizzle.config.ts` sia configurato per SQLite:
+        ```typescript
+        // drizzle.config.ts
+        import { defineConfig } from "drizzle-kit";
+        import { config } from "./server/config"; // Assicurati che importi correttamente
+
+        export default defineConfig({
+          out: "./migrations",
+          schema: "./shared/schema.ts",
+          dialect: "sqlite", // Deve essere sqlite
+          dbCredentials: {
+             // Usa il percorso dal config o direttamente dal .env
+            url: process.env.SQLITE_DB_PATH || config.database.path || 'data/inventory.db',
+          },
+          verbose: true,
+          strict: true,
+        });
+        ```
+    * **(Opzionale) Generare Migrazioni:** Se hai modificato lo schema in `shared/schema.ts`, genera i file di migrazione SQL:
+        ```bash
+        npx drizzle-kit generate
+        ```
+    * **Creare/Aggiornare Tabelle:** Applica lo schema al file di database SQLite. Questo comando crea il file `.db` e le tabelle se non esistono, o tenta di aggiornarle.
+        ```bash
+        npm run db:push
+        # oppure direttamente: npx drizzle-kit push
+        ```
+        *Nota: `db:push` è comodo in sviluppo ma può essere rischioso se il database contiene già dati importanti.*
+
+2.  **Avviare l'Applicazione:**
+    Usa gli script forniti per avviare il server di sviluppo (con hot-reload):
+    * Su Windows:
+        ```cmd
+        .\dev-win.bat
+        ```
+    * Su macOS/Linux:
+        ```bash
+        # Rendi eseguibile (solo la prima volta)
+        chmod +x ./dev.sh
+        # Avvia
+        ./dev.sh
+        ```
+    L'applicazione sarà accessibile all'indirizzo `http://localhost:5000`. L'utente admin predefinito è `admin` con password `admin`.
+
+## Deployment in Produzione (SQLite)
+
+1.  **Compilare l'Applicazione:**
+    Questo comando crea la build ottimizzata del frontend e traspila il backend nella cartella `dist`.
+    ```bash
+    npm run build
+    ```
+    *Assicurati che lo script `build` in `package.json` includa la copia della cartella `migrations` in `dist` se prevedi di usare le migrazioni SQL in futuro.*
+
+2.  **Preparare l'Ambiente di Produzione:**
+    * Copia l'intera cartella del progetto (o almeno la cartella `dist`, `node_modules`, `package.json`, `package-lock.json`, la cartella `migrations` e il file `.env`) sul server di produzione.
+    * Crea o modifica il file `.env` sul server con le impostazioni di produzione:
+        ```dotenv
+        NODE_ENV=production
+        DB_TYPE=sqlite
+        SQLITE_DB_PATH=data/inventory.db # O un percorso più robusto/configurabile
+        SESSION_SECRET=TUA_CHIAVE_SEGRETA_DI_PRODUZIONE_MOLTO_SICURA
+        COOKIE_SECURE=true # Imposta a true se usi HTTPS (raccomandato)
+        PORT=5000
+        HOST=0.0.0.0
+        # FORCE_ITALIAN=true # Se vuoi forzare l'italiano
+        ```
+    * Installa solo le dipendenze di produzione:
+        ```bash
+        npm install --omit=dev
+        ```
+
+3.  **Inizializzare il Database di Produzione (Manuale):**
+    * **Copia il File DB:** Se hai un file `inventory.db` già pronto e testato, puoi semplicemente copiarlo nel percorso definito da `SQLITE_DB_PATH` sul server.
+    * **Oppure, Crea da Zero:** Se devi creare il database sul server per la prima volta:
+        * Installa temporaneamente `drizzle-kit`: `npm install --save-dev drizzle-kit`
+        * Esegui il push dello schema: `npx drizzle-kit push --config=drizzle.config.ts` (assicurati che `drizzle.config.ts` punti al percorso DB di produzione).
+        * Disinstalla `drizzle-kit`: `npm uninstall drizzle-kit`
+
+4.  **Avviare l'Applicazione:**
+    Usa lo script `start` o gli script specifici per l'ambiente:
+    * Metodo Standard (usa `npm start` definito in `package.json`):
+        ```bash
+        npm run start
+        ```
+        Questo eseguirà `NODE_ENV=production node dist/index.js`.
+    * Script Specifici (se configurati e preferiti):
+        * Windows (es. `start-with-sqlite-win.bat`):
+            ```cmd
+            .\start-with-sqlite-win.bat
+            ```
+        * Linux/macOS (es. `start-with-sqlite.sh`):
+            ```bash
+            chmod +x ./start-with-sqlite.sh # Se necessario
+            ./start-with-sqlite.sh
+            ```
+
+    L'applicazione sarà in ascolto su `http://<IP_DEL_SERVER>:5000`. Si consiglia di usare un reverse proxy (come Nginx o Caddy) per gestire HTTPS e l'esposizione pubblica.
 
 ## Struttura del Progetto
 
-- `/client`: Applicazione frontend React
-- `/server`: Server Express.js
-- `/shared`: Codice condiviso tra client e server
-- `/migrations`: Migrazioni del database
+Inventario_MiseForna/
+├── client/         # Codice frontend (React, Vite)
+│   ├── public/
+│   ├── src/
+│   └── ...
+├── dist/           # Output della build di produzione
+├── migrations/     # File di migrazione SQL generati da Drizzle Kit
+├── node_modules/   # Dipendenze installate
+├── server/         # Codice backend (Express, Node.js)
+│   ├── src/        # (Se usi una sotto-cartella src)
+│   └── index.ts    # Entry point del server
+│   └── db.ts       # Configurazione DB e Drizzle ORM
+│   └── auth.ts     # Gestione autenticazione
+│   └── routes.ts   # Definizione API routes
+│   └── storage.ts  # Logica accesso dati (interfaccia con Drizzle)
+│   └── ...
+├── shared/         # Codice TypeScript condiviso (es. schema Drizzle)
+│   └── schema.ts
+├── data/           # Cartella per il file database SQLite (gitignore consigliato)
+│   └── inventory.db
+├── .env            # Variabili d'ambiente LOCALI (gitignore)
+├── .env.example    # Esempio variabili d'ambiente
+├── drizzle.config.ts # Configurazione Drizzle Kit
+├── package.json
+├── package-lock.json
+├── tsconfig.json
+├── dev-win.bat     # Script avvio sviluppo Windows
+├── dev.sh          # Script avvio sviluppo Linux/macOS
+├── README.md       # Questo file
+└── ...             # Altri file di configurazione (vite, tailwind, etc.)
 
-## Funzionalità Principali
+## Backup del Database SQLite
 
-- Gestione inventario con supporto QR
-- Sistema di prestiti
-- Reporting e analytics
-- Gestione utenti e permessi
-- Interfaccia multilingua (IT/EN)
+**È FONDAMENTALE eseguire backup regolari del file di database SQLite (`data/inventory.db` o il percorso configurato).**
 
-## Deployment in Produzione
+* Pianifica copie automatiche del file `.db`.
+* Conserva i backup in una posizione sicura e separata dal server principale.
+* Verifica periodicamente la validità e ripristinabilità dei backup.
 
-### Compilazione e Avvio Standard
+## Risoluzione dei Problemi Comuni
 
-1. **Compila l'applicazione**:
-   ```bash
-   npm run build
-   ```
-
-2. **Configura le variabili d'ambiente per produzione**:
-   Crea un file `.env` nella root del progetto utilizzando il file `.env.example` come base:
-   ```
-   DB_TYPE=sqlite
-   SESSION_SECRET=your_secure_production_secret
-   NODE_ENV=production
-   COOKIE_SECURE=true  # Se usi HTTPS
-   ```
-
-3. **Avvia il server di produzione**:
-   ```bash
-   npm run start
-   ```
-
-   Il server sarà disponibile su `http://0.0.0.0:5000`.
-
-### Script di Avvio per SQLite in Produzione
-
-Per semplificare l'avvio con SQLite in produzione, è stato creato uno script dedicato:
-
-**Windows**:
-1. Crea un file `start-with-sqlite-win.bat` contenente:
-   ```cmd
-   @echo off
-   set NODE_ENV=production
-   set DB_TYPE=sqlite
-   set SESSION_SECRET=your-secure-production-secret
-   node dist/index.js
-   ```
-
-2. Esegui lo script:
-   ```cmd
-   .\start-with-sqlite-win.bat
-   ```
-
-**Linux/macOS**:
-1. Utilizza lo script `start-with-sqlite.sh` già incluso:
-   ```bash
-   chmod +x ./start-with-sqlite.sh
-   ./start-with-sqlite.sh
-   ```
-
-## Note per la Produzione
-
-- L'applicazione usa SQLite come database
-- Il database viene salvato localmente nel file specificato in DATABASE_URL
-- Le sessioni vengono memorizzate nel database
-- Il server Express serve sia l'API che i file statici
-- La porta predefinita è 5000
-
-## Backup del Database
-
-Si consiglia di configurare backup periodici del file del database SQLite:
-- Effettuare una copia del file `.db` regolarmente
-- Mantenere i backup in una posizione sicura
-- Verificare periodicamente l'integrità dei backup
-
-## Manutenzione
-
-- Backup regolari del file database
-- Monitoraggio attività attraverso il pannello admin
-- Log degli accessi e delle operazioni
-
-## Risoluzione dei problemi comuni
+*(La sezione esistente sulla risoluzione dei problemi sembra già abbastanza buona, puoi mantenerla o adattarla se necessario)*
 
 ### Errori in ambiente Windows
 
-1. **Errore "NODE_ENV=development non è riconosciuto come comando" quando si esegue npm run dev**:
-   Utilizzare lo script batch `dev-win.bat` creato appositamente per Windows:
-   ```cmd
-   .\dev-win.bat
-   ```
-
-2. **Errore "DATABASE_URL must be set"**:
-   Assicurarsi di avere un file `.env` corretto nella root del progetto. Copiare il file `.env.example` e rinominarlo in `.env`:
-   ```cmd
-   copy .env.example .env
-   ```
-
-3. **Errori di login o registrazione utente**:
-   - Verificare che sia impostata la variabile `SESSION_SECRET` nel file `.env`
-   - Controllare che l'applicazione stia usando il database SQLite (`DB_TYPE=sqlite` nel file `.env`)
-   - Se necessario, eliminare il database esistente e lasciare che l'applicazione ne crei uno nuovo all'avvio
-
-4. **Errore di accesso alla pagina Admin**:
-   - Assicurarsi di aver effettuato l'accesso con un account avente ruolo "admin"
-   - L'utente predefinito è "admin" con password "admin"
+1.  **Errore `NODE_ENV=development non è riconosciuto...`**: Usare `.\dev-win.bat`.
+2.  **Variabili d'ambiente mancanti**: Assicurarsi che il file `.env` esista e sia corretto. Copiare da `.env.example` se necessario.
+3.  **Errori Login/Registrazione**: Verificare `SESSION_SECRET` in `.env`, assicurarsi `DB_TYPE=sqlite`. Se il DB sembra corrotto, cancellare il file `.db` e ricrearlo con `npm run db:push`.
+4.  **Errore accesso Admin**: Verificare di aver fatto login come `admin` (password default: `admin`).
 
 ### Errori in ambiente Linux/macOS
 
-Se gli script `.sh` non sono eseguibili, concedere i permessi di esecuzione:
-```bash
-chmod +x ./dev.sh ./start-with-sqlite.sh
-```
+* Se gli script `.sh` non sono eseguibili: `chmod +x ./nome_script.sh`.
 
 ## Supporto
 
-Per assistenza tecnica, aprire una issue nel repository o contattare il team di sviluppo.
+Per problemi o domande, aprire una issue nel repository GitHub del progetto o contattare gli sviluppatori.
