@@ -84,13 +84,13 @@ export default function Inventory() {
             <SelectContent>
               <SelectItem value="all">{t("app.filter")}…</SelectItem>
               <SelectItem value="available">
-                {t("inventory.status.available")}
+                {t("inventory.statusAvailable")}
               </SelectItem>
               <SelectItem value="loaned">
-                {t("inventory.status.loaned")}
+                {t("inventory.statusLoaned")}
               </SelectItem>
               <SelectItem value="maintenance">
-                {t("inventory.status.maintenance")}
+                {t("inventory.statusMaintenance")}
               </SelectItem>
             </SelectContent>
           </Select>

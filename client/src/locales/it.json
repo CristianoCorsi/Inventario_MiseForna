@@ -123,6 +123,9 @@
     "origin": "Origine",
     "search": "Cerca articoli",
     "status": "Stato",
+    "statusavailable": "Disponibile",
+    "statusloaned": "Prestato",
+    "statusmaintenance": "In Manutenzione",
     "title": "Inventario",
     "value": "Valore"
   },
@@ -132,6 +135,7 @@
     "addDescription": "Compila i dati sottostanti per aggiungere un nuovo articolo al tuo inventario.",
     "addTitle": "Aggiungi un nuovo articolo all'inventario",
     "adding": "Sto aggiungendo...",
+    "delete": "Articolo eliminato",
     "description": "Descrizione",
     "descriptionPlaceholder": "Inserisci una descrizione dell'articolo...",
     "details": {

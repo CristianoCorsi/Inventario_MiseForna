@@ -300,11 +300,11 @@ export default function ItemDetail() {
                   <div>
                     <CardTitle className="text-2xl">{item.name}</CardTitle>
                     <CardDescription>
-                      {t("item.serialNumber")}: {item.itemId}
+                      {t("inventory.id")}: {item.itemId}
                     </CardDescription>
                   </div>
                   <Badge className={getStatusBadgeClass(item.status)}>
-                    {t(`inventory.status.${item.status}`)}
+                    {t(`inventory.status${item.status}`)}
                   </Badge>
                 </div>
               </CardHeader>
@@ -399,7 +399,7 @@ export default function ItemDetail() {
                               <span className="text-sm text-gray-500">
                                 {format(
                                   new Date(activity.timestamp),
-                                  "MMM d, yyyy h:mm a",
+                                  "MMM d, yyyy h:mm a"
                                 )}
                               </span>
                             </div>
@@ -443,8 +443,8 @@ export default function ItemDetail() {
                                   loan.status === "active"
                                     ? "bg-primary/20 text-primary"
                                     : loan.status === "overdue"
-                                      ? "bg-destructive/20 text-destructive"
-                                      : "bg-success/20 text-success"
+                                    ? "bg-destructive/20 text-destructive"
+                                    : "bg-success/20 text-success"
                                 }
                               >
                                 {t(`loans.status.${loan.status}`)}
@@ -465,7 +465,7 @@ export default function ItemDetail() {
                                 >
                                   {format(
                                     new Date(loan.dueDate),
-                                    "MMM d, yyyy",
+                                    "MMM d, yyyy"
                                   )}
                                 </p>
                               </div>
@@ -477,7 +477,7 @@ export default function ItemDetail() {
                                   <p>
                                     {format(
                                       new Date(loan.returnDate),
-                                      "MMM d, yyyy",
+                                      "MMM d, yyyy"
                                     )}
                                   </p>
                                 </div>

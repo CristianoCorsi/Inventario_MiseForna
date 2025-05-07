@@ -123,6 +123,9 @@
     "origin": "Origin",
     "search": "Search items",
     "status": "Status",
+    "statusavailable": "Available",
+    "statusloaned": "Loaned",
+    "statusmaintenance": "Maintainance",
     "title": "Inventory",
     "value": "Value"
   },
@@ -132,6 +135,7 @@
     "addDescription": "Fill in the details below to add a new item to your inventory.",
     "addTitle": "Add New Inventory Item",
     "adding": "Adding...",
+    "delete": "Item deleted",
     "description": "Description",
     "descriptionPlaceholder": "Enter item description...",
     "details": {
