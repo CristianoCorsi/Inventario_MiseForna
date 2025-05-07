@@ -1,14 +1,20 @@
 import { defineConfig } from "drizzle-kit";
+import { config } from "./server/config"; // Importa la configurazione
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
-}
+// Assicurati che il percorso del database sia definito per SQLite
+const dbPath =
+  config.database.type === "sqlite"
+    ? config.database.path
+    : "data/inventory.db"; // Default path
 
 export default defineConfig({
   out: "./migrations",
   schema: "./shared/schema.ts",
-  dialect: "postgresql",
+  dialect: "sqlite", // Cambia qui
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    url: dbPath!, // Usa il percorso del file db SQLite
   },
+  // Aggiungi questo per un output più chiaro
+  verbose: true,
+  strict: true,
 });

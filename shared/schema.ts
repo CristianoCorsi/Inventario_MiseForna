@@ -4,28 +4,30 @@ import { z } from "zod";
 
 // Solo il server deve caricare dotenv, il frontend gestisce le variabili d'ambiente in modo diverso
 // Verifichiamo se siamo in un ambiente browser o server
-const isServer = typeof window === 'undefined';
+const isServer = typeof window === "undefined";
 
 // Carica dotenv solo sul server
 if (isServer) {
   // Import dinamico per evitare problemi nel browser
-  import('dotenv').then(dotenv => {
-    // Carica le variabili d'ambiente se non è già stato fatto
-    if (typeof process !== 'undefined' && !process.env.DB_TYPE) {
-      dotenv.config();
-    }
-  }).catch(err => {
-    console.error('Errore durante il caricamento di dotenv:', err);
-  });
+  import("dotenv")
+    .then((dotenv) => {
+      // Carica le variabili d'ambiente se non è già stato fatto
+      if (typeof process !== "undefined" && !process.env.DB_TYPE) {
+        dotenv.config();
+      }
+    })
+    .catch((err) => {
+      console.error("Errore durante il caricamento di dotenv:", err);
+    });
 }
 
 // Importa i tipi di tabelle per tutti i database supportati
 import {
-  sqliteTable, 
-  text as sqliteText, 
-  integer as sqliteInteger, 
+  sqliteTable,
+  text as sqliteText,
+  integer as sqliteInteger,
   blob as sqliteBlob,
-  primaryKey as sqlitePrimaryKey
+  primaryKey as sqlitePrimaryKey,
 } from "drizzle-orm/sqlite-core";
 
 import {
@@ -37,7 +39,7 @@ import {
   timestamp as pgTimestamp,
   jsonb as pgJsonb,
   varchar as pgVarchar,
-  unique as pgUnique
+  unique as pgUnique,
 } from "drizzle-orm/pg-core";
 
 import {
@@ -50,19 +52,21 @@ import {
   timestamp as mysqlTimestamp,
   json as mysqlJson,
   primaryKey as mysqlPrimaryKey,
-  unique as mysqlUnique
-} from 'drizzle-orm/mysql-core';
+  unique as mysqlUnique,
+} from "drizzle-orm/mysql-core";
 
 // Funzione per ottenere la data corrente compatibile con tutti i database
 const getNow = () => sql`CURRENT_TIMESTAMP`;
 
 // Determina il tipo di database dal file .env o usa SQLite come default
 // Utilizziamo un approccio condizionale per gestire sia l'ambiente server che quello client
-const DB_TYPE = isServer ? 
-  // Sul server, possiamo accedere a process.env
-  (typeof process !== 'undefined' && process.env.DB_TYPE ? process.env.DB_TYPE : 'sqlite') : 
-  // Sul client, usiamo sempre SQLite
-  'sqlite';
+const DB_TYPE = isServer
+  ? // Sul server, possiamo accedere a process.env
+    typeof process !== "undefined" && process.env.DB_TYPE
+    ? process.env.DB_TYPE
+    : "sqlite"
+  : // Sul client, usiamo sempre SQLite
+    "sqlite";
 
 // Log solo sul server
 if (isServer) {
@@ -72,16 +76,16 @@ if (isServer) {
 // Seleziona il tipo di tabella e colonne in base al database
 let Table, TEXT, INTEGER, SERIAL, BOOLEAN, TIMESTAMP, JSON_TYPE, VARCHAR;
 
-if (DB_TYPE === 'sqlite') {
+if (DB_TYPE === "sqlite") {
   Table = sqliteTable;
   TEXT = sqliteText;
   INTEGER = sqliteInteger;
   SERIAL = sqliteInteger; // SQLite non ha SERIAL, usa INTEGER con AUTOINCREMENT
-  BOOLEAN = (name) => sqliteInteger(name, { mode: 'boolean' });
+  BOOLEAN = (name) => sqliteInteger(name, { mode: "boolean" });
   TIMESTAMP = sqliteText; // SQLite memorizza le date come TEXT
   JSON_TYPE = sqliteText; // SQLite memorizza JSON come TEXT
   VARCHAR = sqliteText; // SQLite non distingue tra TEXT e VARCHAR
-} else if (DB_TYPE === 'mysql' || DB_TYPE === 'mssql') {
+} else if (DB_TYPE === "mysql" || DB_TYPE === "mssql") {
   Table = mysqlTable;
   TEXT = mysqlText;
   INTEGER = mysqlInt;
@@ -191,12 +195,24 @@ export const users = Table("users", {
 
 // Insert schemas
 export const insertItemSchema = createInsertSchema(items).omit({ id: true });
-export const insertLocationSchema = createInsertSchema(locations).omit({ id: true });
+export const insertLocationSchema = createInsertSchema(locations).omit({
+  id: true,
+});
 export const insertLoanSchema = createInsertSchema(loans).omit({ id: true });
-export const insertActivitySchema = createInsertSchema(activities).omit({ id: true });
-export const insertSettingSchema = createInsertSchema(settings).omit({ id: true });
-export const insertQrCodeSchema = createInsertSchema(qrCodes).omit({ id: true });
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, lastLogin: true });
+export const insertActivitySchema = createInsertSchema(activities).omit({
+  id: true,
+});
+export const insertSettingSchema = createInsertSchema(settings).omit({
+  id: true,
+});
+export const insertQrCodeSchema = createInsertSchema(qrCodes).omit({
+  id: true,
+});
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  lastLogin: true,
+});
 // Session types defined manually for MemoryStore compatibility
 export interface Session {
   sid: string;
@@ -231,7 +247,11 @@ export const itemFormSchema = insertItemSchema.extend({
 
 export const loanFormSchema = insertLoanSchema.extend({
   borrowerName: z.string().min(2, "Borrower name is required"),
-  borrowerEmail: z.string().email("Invalid email address").optional().or(z.literal("")),
+  borrowerEmail: z
+    .string()
+    .email("Invalid email address")
+    .optional()
+    .or(z.literal("")),
   borrowerPhone: z.string().optional().or(z.literal("")),
   dueDate: z.date({ required_error: "Due date is required" }),
 });
@@ -247,31 +267,49 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-export const registerSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
-  email: z.string().email("Invalid email address").optional().or(z.literal("")),
-  fullName: z.string().optional().or(z.literal("")),
-  role: z.enum(["admin", "staff", "viewer"]).default("staff")
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"]
-});
+export const registerSchema = z
+  .object({
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z
+      .string()
+      .min(6, "Password must be at least 6 characters"),
+    email: z
+      .string()
+      .email("Invalid email address")
+      .optional()
+      .or(z.literal("")),
+    fullName: z.string().optional().or(z.literal("")),
+    role: z.enum(["admin", "staff", "viewer"]).default("staff"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
-export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z.string().min(6, "New password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "New password must be at least 6 characters")
-}).refine(data => data.newPassword === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"]
-});
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z
+      .string()
+      .min(6, "New password must be at least 6 characters"),
+    confirmPassword: z
+      .string()
+      .min(6, "New password must be at least 6 characters"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 export const userProfileSchema = insertUserSchema
   .omit({ password: true, role: true, isActive: true })
   .extend({
-    email: z.string().email("Invalid email address").optional().or(z.literal("")),
+    email: z
+      .string()
+      .email("Invalid email address")
+      .optional()
+      .or(z.literal("")),
     fullName: z.string().optional().or(z.literal("")),
   });
 

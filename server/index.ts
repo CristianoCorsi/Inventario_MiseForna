@@ -1,15 +1,14 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { initializeDatabase } from "./db";
-import { config } from './config';
-import { setupAuth } from './auth';
-
+import { config } from "./config";
+import { setupAuth } from "./auth";
+import "./db";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-setupAuth(app);   // ← monta session + passport QUI, prima delle route
+setupAuth(app); // ← monta session + passport QUI, prima delle route
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -42,9 +41,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Inizializza il database prima di registrare le rotte
-  await initializeDatabase();
-  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -78,6 +74,6 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
-    },
+    }
   );
 })();

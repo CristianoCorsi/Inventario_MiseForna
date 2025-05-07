@@ -6,7 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { sessionStore } from "./sessionStore";
-import { User as SelectUser } from "@shared/schema";
+import { User as SelectUser, InsertUser } from "@shared/schema";
 
 declare global {
   namespace Express {
@@ -23,7 +23,10 @@ async function hashPassword(password: string): Promise<string> {
   return `${buf.toString("hex")}.${salt}`;
 }
 
-async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
+async function comparePasswords(
+  supplied: string,
+  stored: string
+): Promise<boolean> {
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
@@ -34,15 +37,15 @@ async function comparePasswords(supplied: string, stored: string): Promise<boole
 export function setupAuth(app: Express) {
   // Session configuration
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || 'inventory-management-secret',
+    secret: process.env.SESSION_SECRET || "inventory-management-secret",
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 1 day
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
-    }
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    },
   };
 
   // Initialize session middleware
@@ -110,7 +113,7 @@ export function setupAuth(app: Express) {
         fullName,
         role,
         isActive: true,
-        preferences: JSON.stringify({})
+        preferences: JSON.stringify({}),
       });
 
       // Remove password from response
@@ -124,24 +127,29 @@ export function setupAuth(app: Express) {
 
   app.post("/api/login", (req, res, next) => {
     try {
-      passport.authenticate("local", (err: Error, user: Express.User, info: any) => {
-        if (err) {
-          console.error("Login error:", err);
-          return res.status(500).json({ error: "Internal server error" });
-        }
-        if (!user) {
-          return res.status(401).json({ error: info?.message || "Authentication failed" });
-        }
-        req.login(user, (loginErr) => {
-          if (loginErr) {
-            console.error("Login session error:", loginErr);
-            return res.status(500).json({ error: "Error creating session" });
+      passport.authenticate(
+        "local",
+        (err: Error, user: Express.User, info: any) => {
+          if (err) {
+            console.error("Login error:", err);
+            return res.status(500).json({ error: "Internal server error" });
           }
-          // Remove password from response
-          const { password: _, ...userWithoutPassword } = user;
-          return res.json(userWithoutPassword);
-        });
-      })(req, res, next);
+          if (!user) {
+            return res
+              .status(401)
+              .json({ error: info?.message || "Authentication failed" });
+          }
+          req.login(user, (loginErr) => {
+            if (loginErr) {
+              console.error("Login session error:", loginErr);
+              return res.status(500).json({ error: "Error creating session" });
+            }
+            // Remove password from response
+            const { password: _, ...userWithoutPassword } = user;
+            return res.json(userWithoutPassword);
+          });
+        }
+      )(req, res, next);
     } catch (error) {
       console.error("Unhandled login error:", error);
       res.status(500).json({ error: "Server error during authentication" });
@@ -175,7 +183,7 @@ export function setupAuth(app: Express) {
         fullName,
         email,
         // Convertire preferences in stringa JSON se presente
-        preferences: preferences ? JSON.stringify(preferences) : undefined
+        preferences: preferences ? JSON.stringify(preferences) : undefined,
       });
 
       if (!updatedUser) {
@@ -207,7 +215,7 @@ export function setupAuth(app: Express) {
 
       // Update password
       const updated = await storage.updateUser(user.id, {
-        password: hashedPassword
+        password: hashedPassword,
       });
 
       if (!updated) {
@@ -226,7 +234,7 @@ export function setupAuth(app: Express) {
       const users = await storage.getUsers();
 
       // Remove passwords from response
-      const usersWithoutPasswords = users.map(user => {
+      const usersWithoutPasswords = users.map((user) => {
         const { password: _, ...userWithoutPassword } = user;
         return userWithoutPassword;
       });
@@ -258,7 +266,7 @@ export function setupAuth(app: Express) {
         fullName,
         role,
         isActive: true,
-        preferences: JSON.stringify({})
+        preferences: JSON.stringify({}),
       });
 
       // Remove password from response
@@ -287,7 +295,7 @@ export function setupAuth(app: Express) {
         email,
         fullName,
         role,
-        isActive
+        isActive,
       });
 
       // Remove password from response
@@ -338,7 +346,7 @@ export function setupAuth(app: Express) {
 
       // Update password
       const updated = await storage.updateUser(userId, {
-        password: hashedPassword
+        password: hashedPassword,
       });
 
       if (!updated) {
@@ -356,34 +364,51 @@ export function setupAuth(app: Express) {
 }
 
 // Create a default admin user if no users exist
+
 async function createDefaultAdminUser() {
   try {
-    const users = await storage.getUsers();
-
-    if (users.length === 0) {
-      const hashedPassword = await hashPassword("admin");
-
-      // Convertire l'oggetto preferences in stringa JSON per SQLite
-      const userToCreate = {
-        username: "admin",
-        password: hashedPassword,
-        fullName: "Administrator",
-        role: "admin",
-        isActive: true,
-        preferences: JSON.stringify({})
-      };
-
-      await storage.createUser(userToCreate);
-
-      console.log("Created default admin user: admin/admin");
+    const existingAdmin = await storage.getUserByUsername("admin");
+    if (existingAdmin) {
+      return;
     }
+
+    console.log("Attempting to create default admin user...");
+    const hashedPassword = await hashPassword("admin");
+
+    const userToCreate = {
+      username: "admin",
+      password: hashedPassword,
+      fullName: "Administrator",
+      email: null,
+      role: "admin",
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      profilePicture: null,
+      preferences: JSON.stringify({}),
+    };
+
+    console.log("User object to create:", userToCreate);
+
+    // Assicurati che createUser possa accettare questo oggetto
+    const newUser = await storage.createUser(userToCreate as InsertUser);
+    console.log("Created default admin user:", newUser.username);
   } catch (error) {
-    console.error("Error creating default admin user:", error);
+    if (error instanceof Error) {
+      console.error("Error creating default admin user:", error.message);
+      console.error("Error code:", (error as any).code);
+      console.error(error.stack);
+    } else {
+      console.error("Unknown error creating default admin user:", error);
+    }
   }
 }
 
 // Middleware for checking authentication
-export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
+export function isAuthenticated(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   if (req.isAuthenticated()) {
     return next();
   }
