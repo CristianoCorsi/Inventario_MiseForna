@@ -76,7 +76,7 @@ export default function ItemDetail() {
     onSuccess: () => {
       toast({
         title: t("item.delete"),
-        description: t("item.delete") + " " + t("item.details"),
+        description: t("item.delete") + ": " + itemId,
       });
       navigate("/inventory");
     },
